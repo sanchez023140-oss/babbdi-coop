@@ -19,7 +19,7 @@ namespace BabbdiCoop
     {
         public const string PluginGuid = "com.babbdi.coop";
         public const string PluginName = "BabbdiCoop";
-        public const string PluginVersion = "0.10.47";
+        public const string PluginVersion = "0.10.48";
 
         private static ManualLogSource Log;
 
@@ -135,6 +135,11 @@ namespace BabbdiCoop
         private void Awake()
         {
             Log = Logger;
+            SteamLobby.Log = s => Log.LogInfo("[LOBBY] " + s);
+            SteamLobby.Toast = s => Toast(s, 5f);
+            pendingConnectLobby = SteamLobby.ConnectLobbyFromCommandLine();
+            if (pendingConnectLobby != 0)
+                Log.LogInfo($"[LOBBY] launch argument +connect_lobby {pendingConnectLobby}");
             joinIp = Config.Bind("Net", "JoinIP", "127.0.0.1", "IP адрес хоста для подключения по UDP (F6)");
             port = Config.Bind("Net", "Port", 7777, "UDP порт");
             transportCfg = Config.Bind("Net", "Transport", "udp",
@@ -294,7 +299,10 @@ namespace BabbdiCoop
                 EnsureMiniGame();
                 SimTick();
                 HandleHotkeys();
+                net.PumpSteam();
                 net.Poll();
+                SteamLobby.Tick();
+                TickLobby();
                 TickVersionHandshake();
                 if (miniGame == null || !miniGame.Active)
                 {
@@ -1048,6 +1056,9 @@ namespace BabbdiCoop
         // v0.10.45: version handshake state
         private float versionTimer;
         private bool versionLogged;
+        // v0.10.48: Steam lobby state
+        private ulong lastLobbyOwner;
+        private ulong pendingConnectLobby;
 
         /// <summary>Announces this build until the peer answers, then says once whether the
         /// versions match. A mismatched peer used to look like "connected but broken".</summary>
@@ -1078,11 +1089,77 @@ namespace BabbdiCoop
             }
         }
 
+        // ---------- v0.10.48 Steam lobby ----------
+
+        private void ToggleLobbyList()
+        {
+            if (SteamLobby.ListOpen)
+            {
+                SteamLobby.CloseList();
+                return;
+            }
+            if (net.role != NetRole.None)
+            {
+                Toast("Сначала отключись (F7), потом ищи лобби", 4f);
+                return;
+            }
+            if (!net.EnsureSteam())
+            {
+                Log.LogWarning("[LOBBY] Steam is not available");
+                Toast("СТИМ НЕДОСТУПЕН: запусти Steam и войди", 5f);
+                return;
+            }
+            SteamLobby.RefreshList();
+        }
+
+        /// <summary>Polls the lobby state and turns "we are in a lobby" into "we are connected
+        /// to its owner". Also handles `+connect_lobby` from an invite launch.</summary>
+        private void TickLobby()
+        {
+            if (SteamLobby.ListOpen)
+            {
+                if (Input.GetKeyDown(KeyCode.DownArrow)) SteamLobby.MoveSelection(1);
+                if (Input.GetKeyDown(KeyCode.UpArrow)) SteamLobby.MoveSelection(-1);
+                if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
+                    SteamLobby.JoinSelected();
+                if (Input.GetKeyDown(KeyCode.Escape)) SteamLobby.CloseList();
+            }
+
+            ulong owner = SteamLobby.JoinedOwner;
+            if (owner != 0 && owner != lastLobbyOwner)
+            {
+                lastLobbyOwner = owner;
+                if (net.role != NetRole.None) net.Stop();
+                if (net.StartSteamClient(owner))
+                {
+                    versionTimer = 0f;
+                    versionLogged = false;
+                    net.SendVersion();
+                    Log.LogInfo($"[LOBBY] connected to the lobby owner {owner}");
+                }
+            }
+            else if (owner == 0)
+            {
+                lastLobbyOwner = 0;
+            }
+
+            if (pendingConnectLobby != 0 && net.role == NetRole.None && net.EnsureSteam())
+            {
+                ulong id = pendingConnectLobby;
+                pendingConnectLobby = 0;
+                Log.LogInfo($"[LOBBY] launched from an invite, joining lobby {id}");
+                SteamLobby.Join(id);
+            }
+        }
+
         private void HandleHotkeys()
         {
             if (Input.GetKeyDown(KeyCode.F5)) StartHost();
             if (Input.GetKeyDown(KeyCode.F6)) StartClient();
             if (Input.GetKeyDown(KeyCode.F7)) StopNet();
+            // v0.10.48: Steam lobby — invite (F9) and browse (F10)
+            if (Input.GetKeyDown(KeyCode.F9)) SteamLobby.Invite();
+            if (Input.GetKeyDown(KeyCode.F10)) ToggleLobbyList();
 
             // F8: the auto grip test guessed wrong в†’ swap the end for this item id
             if (Input.GetKeyDown(KeyCode.F8) && remoteItemId >= 0 && remoteHeldItem != null)
@@ -1115,6 +1192,7 @@ namespace BabbdiCoop
                     net.SendVersion();
                     Log.LogInfo($"[COOP] STEAM HOST id {net.localSteam}");
                     Toast($"СТИМ-ХОСТ. Твой SteamID: {net.localSteam}", 9f);
+                    SteamLobby.Create();
                     return;
                 }
                 net.StartHost(port.Value);
@@ -1176,6 +1254,8 @@ namespace BabbdiCoop
         private void StopNet()
         {
             net.Stop();
+            SteamLobby.Leave();
+            lastLobbyOwner = 0;
             DestroyHeldItem();
             if (remoteGo != null) Destroy(remoteGo);
             remoteGo = null;
@@ -2397,6 +2477,38 @@ namespace BabbdiCoop
                     GUI.Label(new Rect(8, 28, 900, 40),
                         $"ВЕРСИИ НЕ СОВПАДАЮТ: у вас v{PluginVersion}, у партнёра v{net.peerVersion} — обновите оба",
                         warn);
+                }
+            }
+
+            // v0.10.48: Steam lobby — a one-line status and the browser panel
+            if (!SteamLobby.ListOpen && SteamLobby.Status.Length > 0)
+            {
+                GUI.Label(new Rect(8, Screen.height - 92, 900, 24),
+                    "<b>[LOBBY]</b> " + SteamLobby.Status,
+                    new GUIStyle(GUI.skin.label) { fontSize = 15, richText = true });
+            }
+
+            if (SteamLobby.ListOpen)
+            {
+                var st = new GUIStyle(GUI.skin.label) { fontSize = 16, richText = true };
+                int rows = Math.Min(SteamLobby.Found.Count, 8);
+                var box = new Rect(8, 96, 680, 44 + rows * 26);
+                GUI.color = new Color(0f, 0f, 0f, 0.74f);
+                GUI.Box(box, "");
+                GUI.color = Color.white;
+                GUI.Label(new Rect(16, 100, 660, 24),
+                    "<b>ЛОББИ STEAM</b>    ↑↓ — выбор, Enter — войти, F10 — закрыть", st);
+                if (rows == 0)
+                {
+                    GUI.Label(new Rect(20, 130, 660, 24), "ничего не найдено — F10 ещё раз", st);
+                }
+                for (int i = 0; i < rows; i++)
+                {
+                    var e = SteamLobby.Found[i];
+                    string mark = i == SteamLobby.Selected ? "> " : "   ";
+                    string ver = e.SameVersion ? "" : $"    <color=#ff7060>v{e.Version}</color>";
+                    GUI.Label(new Rect(20, 130 + i * 26, 660, 24),
+                        $"{mark}{e.Name}    {e.Members}/{e.Max}{ver}", st);
                 }
             }
 

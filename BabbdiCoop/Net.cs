@@ -587,7 +587,7 @@ namespace BabbdiCoop
         /// <summary>Reuses the Steam session the game already opened — BABBDI calls
         /// `SteamClient.Init(2240530)` itself. If that failed (itch build, Steam closed),
         /// falls back to Spacewar's public test appid 480.</summary>
-        bool EnsureSteam()
+        public bool EnsureSteam()
         {
             try
             {
@@ -617,13 +617,23 @@ namespace BabbdiCoop
             return false;
         }
 
+        /// <summary>v0.10.48: Steam callbacks must be pumped even when no session is running —
+        /// lobby tasks and the invite overlay only progress inside RunCallbacks.</summary>
+        public void PumpSteam()
+        {
+            try
+            {
+                if (SteamClient.IsValid) SteamClient.RunCallbacks();
+            }
+            catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
+        }
+
         /// <summary>Steam mode has no receive thread: the main thread calls this every frame.
         /// Facepunch needs RunCallbacks, and both P2P channels are drained here.</summary>
         public void Poll()
         {
             if (!steam) return;
-            try { SteamClient.RunCallbacks(); }
-            catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
+            PumpSteam();
 
             for (int ch = 0; ch < 2; ch++)
             {

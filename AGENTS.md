@@ -54,7 +54,7 @@ Project: online co-op mod for **BABBDI** v1.2.3 (Unity, by manu1400). User speak
 - Target framework: netstandard2.1. BepInEx 5 + Harmony via direct DLL refs from the game folder, no nuget needed for plugin deps.
 - Windows console prints Cyrillic as mojibake; quote Cyrillic paths. Built-in websearch/webfetch to itch.io fail (403/404) — don't retry them; derive facts from files here.
 
-## Mod status (BabbdiCoop v0.10.47)
+## Mod status (BabbdiCoop v0.10.48)
 
 - Packets: type 1 pose (31 B), type 2 air hockey, type 3 relay, type 4 cabinet duel, **type 5 version handshake (4 B, v0.10.45)**.
 - Packet format (**31 B**, type=1): pos(12) + rot(16) + itemId(1, 0xFF=empty hands) + flags(1) @ ~30 Hz (v0.7.3; was 20 Hz). **Semantics since v0.5.0: pos = FEET position** of the sender, computed as `fpc.transform.TransformPoint(cc.center) - up*(cc.height/2)` (CharacterController-aware → crouch keeps avatar on ground). Rotation = camera rotation; v0.6.0 derives **speed** (position delta / packet dt, smoothed, ignores >12 m/s teleports) and **pitch** (`asin(-forward.y)`) from it. **v0.7.0 flags byte**: bit0 crouch (`fpc.isCrouching`), bit1 airborne (`!cc.isGrounded`), bit2 use (Fire1 rising edge while an item is held, latched 0.2 s). **v0.8.0**: bit3 handstand (held state, `B`), bit4 flip (latched ≈1 s on `V`, receiver starts one flip on the rising edge). Old builds are incompatible with 31 B packets.
@@ -551,6 +551,42 @@ The user: «перетекстурируй … в стилистике и цве
 8. **Not playable**: no puck/mallet physics or scoring; it is a local decorative prop, like the
    figures — each peer builds its own copy from its own GLB. The table's central scoreboard arch is
    part of the source asset and is kept.
+
+### v0.10.48: Steam lobby browser — no 17-digit IDs, no invites required
+
+The Steam transport (v0.10.47) worked but needed the host's SteamID typed by hand. This adds a
+**lobby as a rendezvous**: the host publishes one, the client finds it in a list and clicks.
+
+1. **Host (F5 in `Transport = steam`)**: `CreateLobbyAsync(3)` → `SetPublic()`, then metadata —
+   `mod=babbdi-coop`, `ver=<PluginVersion>`, `host=<SteamID>`, `name=<Steam name>`.
+   `SteamLobby.Tick()` picks the task up on the main thread, stores the `Lobby` and logs
+   `лобби открыто — F9 пригласить друга`.
+2. **Client (F10)**: `new LobbyQuery().WithKeyValue("mod","babbdi-coop").WithSlotsAvailable(1)
+   .WithMaxResults(20).RequestAsync()`. Results are filtered (skip our own lobby by owner id,
+   skip ownerless rows) and drawn as a panel: `> Ник  1/3`, with the version in red when it
+   differs. ↑↓ select, **Enter** joins, **F10** closes, **Esc** closes.
+   Joining → `JoinLobbyAsync` → `lobby.Owner.Id` → `StartSteamClient(owner)` — the existing P2P
+   path, untouched.
+3. **Invites (F9)**: `SteamFriends.OpenGameInviteOverlay(lobbyId)` **plus** `+connect_lobby <id>`
+   parsing at startup (`ConnectLobbyFromCommandLine`). Honest caveat: the Steam overlay is only
+   injected when **Steam itself launched the game**. For a directly started `Babbdi.exe` the call
+   succeeds and shows nothing, and a join request for an already-running game has nowhere to go
+   (this Facepunch build has no lobby/join events). So the browser is the reliable path, invites
+   are a bonus for "friend launches the game from the invite".
+4. **Main-thread discipline**: `CreateLobbyAsync`/`JoinLobbyAsync`/`RequestAsync` return `Task`;
+   **no continuation touches Unity**. The task is stored, `Tick()` checks `IsCompleted` and only
+   then reads `Result`. `SteamClient.RunCallbacks()` moved into `Net.PumpSteam()`, called from
+   `Plugin.Update` **every frame** — without it lobby tasks never progress, and it used to run
+   only inside a Steam session.
+5. **Key bindings**: F5 host (+lobby), F6 join by ID/IP, F7 stop (also closes the lobby),
+   **F9 invite**, **F10 lobby browser**.
+6. **Verified with one account:** `[LOBBY] создаю лобби…` → `лобби открыто`; the browser panel
+   draws (`ЛОББИ STEAM ↑↓ — выбор, Enter — войти, F10 — закрыть` / `ничего не найдено`);
+   `query: status=RanToCompletion` (no permission error); the launch argument is parsed
+   (`launch argument +connect_lobby …` → `launched from an invite, joining lobby …` → the fake id
+   answers `лобби без хозяина`). **Not verified:** two real accounts seeing each other — that
+   needs the second Steam account and machine.
+7. **Version `0.10.48`.** `udp` stays the default; packet formats unchanged.
 
 ### v0.10.47: Steam P2P transport — no IPs, no port forwarding, no Radmin
 
@@ -4534,7 +4570,7 @@ and then removed.
 ## Smoke-test checklist
 
 1. `powershell -ExecutionPolicy Bypass -File build.ps1` from `BabbdiCoop/`
-2. Launch `Babbdi.exe`, look for `BabbdiCoop v0.10.47 loaded` in `<game>\BepInEx\LogOutput.log`.
+2. Launch `Babbdi.exe`, look for `BabbdiCoop v0.10.48 loaded` in `<game>\BepInEx\LogOutput.log`.
 3. HUD (top-left) shows the avatar source; `модель: GLB villager.glb (yaw180)` means the villager rig loaded (`[COOP] avatar loaded from GLB: …villager.glb yaw180=True` then `[GLB] raw height 1,72 m → avatar 2,12 m`).
 4. Both players should run **v0.9.20** (the district is host-side geometry, so a client without it still joins); the 31-byte packet is unchanged, so a 0.7.7/0.7.8/0.8.0 peer still connects — they just do not send/receive the trick bits (bits 3/4). The district is identical for both only if both load the same level scene; it is rebuilt per level load, not synced. **The avatar model is purely local** — each peer renders whatever `model\*.glb` it has, so a mixed 0.9.5/0.9.6 pair sees a soldier on one screen and the villager on the other.
 5. In game: partner should see crouch (flag bit0), jump tuck (bit1), a fast 0.094 s item **jab** on Fire1 (bit2) — the fist stays at mid-body height (~1.06 m), the prop swings horizontal forward — the held prop carried up out of the fist (~70° above horizontal, half world size), the boots touching the floor, a faster run cycle, the legs **stepping backwards** when the partner backs up and a **side-step** when they strafe. **v0.8.0**: the partner's **torso must lean with their view** (not just the head), a held **pickaxe must sit in the fist by the handle** (log: `nearest point … cm from the fist` ≈ 4 cm), and pressing **B** (handstand toggle) / **V** (backflip) must show the avatar standing on its hands / doing a full backflip while your own view rolls 180° / spins 360°.
