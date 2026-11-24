@@ -1,0 +1,9 @@
+{
+ "prompt": "wide horizontal 1980s arcade cabinet marquee poster background, 3:1 panorama, Soviet brutalist world, muted grey beige khaki sand brick and moss green palette, grainy screen-print and pixel-art hybrid, weathered concrete, limited flat colours, strong graphic composition, no text, no lettering, no logo, no neon, no glossy render, a lone worker in a dark flat cap and long charcoal coat running to the right along a pale concrete road, gigantic blank apartment blocks and tower cranes behind him, empty pale grey sky, wide negative space on the left for a title",
+ "negative": "text, letters, words, logo, watermark, neon, rainbow, saturated pink, purple, cyan, cartoon, anime, photorealistic, modern glossy, 3d render, blurry, low quality, deformed, extra limbs",
+ "seed": 9373,
+ "size": [
+  1536,
+  512
+ ]
+}

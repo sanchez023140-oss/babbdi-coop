@@ -1,0 +1,235 @@
+{
+  "game": "Dinozavrik",
+  "style": "grey-dominant muted brutalist AI slop, pixel art; no bright colours",
+  "internal_resolution": [
+    320,
+    240
+  ],
+  "palette": [
+    [
+      12,
+      12,
+      12
+    ],
+    [
+      30,
+      30,
+      30
+    ],
+    [
+      48,
+      48,
+      48
+    ],
+    [
+      66,
+      66,
+      66
+    ],
+    [
+      84,
+      84,
+      84
+    ],
+    [
+      102,
+      102,
+      102
+    ],
+    [
+      120,
+      120,
+      120
+    ],
+    [
+      138,
+      138,
+      138
+    ],
+    [
+      156,
+      156,
+      156
+    ],
+    [
+      174,
+      174,
+      174
+    ],
+    [
+      106,
+      100,
+      80
+    ],
+    [
+      122,
+      116,
+      94
+    ],
+    [
+      110,
+      78,
+      62
+    ],
+    [
+      128,
+      94,
+      74
+    ],
+    [
+      78,
+      102,
+      98
+    ],
+    [
+      90,
+      116,
+      112
+    ],
+    [
+      86,
+      96,
+      108
+    ],
+    [
+      138,
+      115,
+      80
+    ],
+    [
+      116,
+      75,
+      66
+    ],
+    [
+      168,
+      156,
+      136
+    ]
+  ],
+  "background": {
+    "file": "bg_loop.png",
+    "size": [
+      1280,
+      240
+    ],
+    "loop": "mirror",
+    "scroll": "slow"
+  },
+  "ground": {
+    "file": "ground_loop.png",
+    "size": [
+      640,
+      64
+    ],
+    "loop": "mirror",
+    "scroll": "fast"
+  },
+  "player": {
+    "current": "player_run.png",
+    "cell": [
+      64,
+      64
+    ],
+    "facing": "right",
+    "variants": [
+      {
+        "id": 1,
+        "file": "player_variants/variant_1_stocky.png",
+        "label": "1  STOCKY"
+      },
+      {
+        "id": 2,
+        "file": "player_variants/variant_2_tall.png",
+        "label": "2  TALL"
+      },
+      {
+        "id": 3,
+        "file": "player_variants/variant_3_woman.png",
+        "label": "3  WOMAN"
+      },
+      {
+        "id": 4,
+        "file": "player_variants/variant_4_foreman.png",
+        "label": "4  FOREMAN"
+      }
+    ],
+    "chosen": "foreman (variant 4)",
+    "frames": {
+      "run": [
+        "player_run.png",
+        "player_run_2.png"
+      ],
+      "jump": "player_jump.png",
+      "fall": "player_fall.png",
+      "crouch": "player_crouch.png",
+      "idle": "player_idle.png"
+    }
+  },
+  "obstacles": [
+    {
+      "name": "crate",
+      "file": "obstacle_crate.png",
+      "cell": [
+        64,
+        64
+      ]
+    },
+    {
+      "name": "barrel",
+      "file": "obstacle_barrel.png",
+      "cell": [
+        64,
+        64
+      ]
+    },
+    {
+      "name": "rubble",
+      "file": "obstacle_rubble.png",
+      "cell": [
+        64,
+        64
+      ]
+    },
+    {
+      "name": "barrier",
+      "file": "obstacle_barrier.png",
+      "cell": [
+        64,
+        64
+      ]
+    },
+    {
+      "name": "cone",
+      "file": "obstacle_cone.png",
+      "cell": [
+        64,
+        64
+      ]
+    },
+    {
+      "name": "pipe",
+      "file": "obstacle_pipe.png",
+      "cell": [
+        64,
+        64
+      ]
+    },
+    {
+      "name": "block",
+      "file": "obstacle_block.png",
+      "cell": [
+        64,
+        64
+      ]
+    },
+    {
+      "name": "rebar",
+      "file": "obstacle_rebar.png",
+      "cell": [
+        64,
+        64
+      ]
+    }
+  ]
+}

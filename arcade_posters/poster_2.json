@@ -1,0 +1,9 @@
+{
+ "prompt": "tall vertical 1980s arcade cabinet marquee poster, exact 1:3 portrait composition, Soviet brutalist sci-fi, muted grey olive beige rust palette, grainy airbrush and pixel-art hybrid, worn printed paper, chrome metal pseudo-Cyrillic lettering, unreadable retro title, dark frame, no neon, no bright rainbow colors, flat graphic shapes, high contrast, arcade attract art, close-up portrait of a stern pale Soviet foreman in a dark flat cap and long charcoal coat, narrow dark eyes, weathered face, behind him a grey brutalist skyline with cranes, beige khaki sand accents, huge chrome title at the top, dramatic vertical arcade poster",
+ "negative": "bright neon, rainbow, saturated pink, purple, cyan, cartoon, anime, photorealistic, modern glossy, 3d render, watermark, logo, blurry, low quality, deformed, extra limbs",
+ "seed": 8374,
+ "size": [
+  512,
+  1536
+ ]
+}
