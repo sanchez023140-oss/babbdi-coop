@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.IO;
 using BepInEx.Logging;
@@ -805,7 +805,7 @@ namespace BabbdiCoop
             Active = false;
             if (localTableId >= 0) AirHockeyScoreboard.SetInUse(localTableId, false);
             if (sfx != null) sfx.Stop();
-            try { net?.SendMiniLeave(localSide, localTableId); } catch { }
+            try { net?.SendMiniLeave(localSide, localTableId); } catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
             ShowHeldItems();
             RestoreListenerAfterMiniGame();
             CoopPlayerAudio.RestoreHeldScripts(log);

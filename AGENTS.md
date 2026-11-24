@@ -16,6 +16,7 @@ Project: online co-op mod for **BABBDI** v1.2.3 (Unity, by manu1400). User speak
 - `Rigger/`, `Harness/` — offline tools (auto-rig, glTF render).
 - `Tests/` — offline console checks: `dotnet run --project Tests` compiles `BabbdiCoop/SnakeTurn.cs` directly and asserts the turn rule (8 checks, ~1 s, no game). Run it after touching snake input.
 - `GIT-CHEATSHEET.md` — the short git guide for the project owner (Russian).
+- `make-release.ps1` + `RELEASE-README.txt` — build the friend-facing zip into `E:\858\BabbdiWork\Release`.
 
 ## Git
 
@@ -53,7 +54,7 @@ Project: online co-op mod for **BABBDI** v1.2.3 (Unity, by manu1400). User speak
 - Target framework: netstandard2.1. BepInEx 5 + Harmony via direct DLL refs from the game folder, no nuget needed for plugin deps.
 - Windows console prints Cyrillic as mojibake; quote Cyrillic paths. Built-in websearch/webfetch to itch.io fail (403/404) — don't retry them; derive facts from files here.
 
-## Mod status (BabbdiCoop v0.10.45)
+## Mod status (BabbdiCoop v0.10.46)
 
 - Packets: type 1 pose (31 B), type 2 air hockey, type 3 relay, type 4 cabinet duel, **type 5 version handshake (4 B, v0.10.45)**.
 - Packet format (**31 B**, type=1): pos(12) + rot(16) + itemId(1, 0xFF=empty hands) + flags(1) @ ~30 Hz (v0.7.3; was 20 Hz). **Semantics since v0.5.0: pos = FEET position** of the sender, computed as `fpc.transform.TransformPoint(cc.center) - up*(cc.height/2)` (CharacterController-aware → crouch keeps avatar on ground). Rotation = camera rotation; v0.6.0 derives **speed** (position delta / packet dt, smoothed, ignores >12 m/s teleports) and **pitch** (`asin(-forward.y)`) from it. **v0.7.0 flags byte**: bit0 crouch (`fpc.isCrouching`), bit1 airborne (`!cc.isGrounded`), bit2 use (Fire1 rising edge while an item is held, latched 0.2 s). **v0.8.0**: bit3 handstand (held state, `B`), bit4 flip (latched ≈1 s on `V`, receiver starts one flip on the rising edge). Old builds are incompatible with 31 B packets.
@@ -550,6 +551,29 @@ The user: «перетекстурируй … в стилистике и цве
 8. **Not playable**: no puck/mallet physics or scoring; it is a local decorative prop, like the
    figures — each peer builds its own copy from its own GLB. The table's central scoreboard arch is
    part of the source asset and is kept.
+
+### v0.10.46: every swallowed error is now logged once, and the mod packages itself for a friend
+
+1. **`CoopDiag.Swallowed`** replaces all **28 empty `catch { }` blocks**. The compiler fills in
+   `[CallerFilePath]`/`[CallerLineNumber]`, so no call site needed a hand-written label:
+   `[COOP] swallowed exception at Net.cs:212 — FormatException: ...`. Each site reports **once**
+   (a `HashSet` of `file:line`), so a per-frame path cannot flood the log; `CoopDiag.Reset()`
+   exists for tests and scene reloads. Proof of no false positives: a full level load and district
+   build produce `swallowed lines: 0` in the log.
+2. **`make-release.ps1`** builds the friend-facing archive:
+   `powershell -ExecutionPolicy Bypass -File make-release.ps1` →
+   `E:\858\BabbdiWork\Release\BabbdiCoop-v<version>.zip`.
+   It reads the version straight from `Plugin.cs`, mirrors the real game layout
+   (`BepInEx\plugins\BabbdiCoop.dll` + `BepInEx\plugins\BabbdiCoop\…`), writes
+   `README-INSTALL.txt` from `RELEASE-README.txt` (UTF-8 with BOM, so Notepad shows Russian), and
+   skips runtime debug output: `*.csv`, `*.txt`, and the `map/`, `preview/`, `texdump/`,
+   `npcscan/` folders. Result: **110 entries, 129 MB unpacked → 120 MB zip** (was 600 MB before the
+   filter — the deployed folder carries ~470 MB of screenshots).
+3. **The script is ASCII-only on purpose**: PowerShell 5.1 misreads non-BOM UTF-8 Cyrillic in a
+   `.ps1` (that is the same trap as the old `Set-Content` bug), so every Russian string lives in
+   `RELEASE-README.txt` and is read with an explicit UTF-8 decoder.
+4. **Version `0.10.46`.** Install steps for the friend are in `RELEASE-README.txt`: BepInEx 5.4.23.2
+   x64, unzip both into the game folder, run once, then F5/F6 and `JoinIP`.
 
 ### v0.10.45: the mod now tells you out loud when the two builds do not match
 
@@ -4477,7 +4501,7 @@ and then removed.
 ## Smoke-test checklist
 
 1. `powershell -ExecutionPolicy Bypass -File build.ps1` from `BabbdiCoop/`
-2. Launch `Babbdi.exe`, look for `BabbdiCoop v0.10.45 loaded` in `<game>\BepInEx\LogOutput.log`.
+2. Launch `Babbdi.exe`, look for `BabbdiCoop v0.10.46 loaded` in `<game>\BepInEx\LogOutput.log`.
 3. HUD (top-left) shows the avatar source; `модель: GLB villager.glb (yaw180)` means the villager rig loaded (`[COOP] avatar loaded from GLB: …villager.glb yaw180=True` then `[GLB] raw height 1,72 m → avatar 2,12 m`).
 4. Both players should run **v0.9.20** (the district is host-side geometry, so a client without it still joins); the 31-byte packet is unchanged, so a 0.7.7/0.7.8/0.8.0 peer still connects — they just do not send/receive the trick bits (bits 3/4). The district is identical for both only if both load the same level scene; it is rebuilt per level load, not synced. **The avatar model is purely local** — each peer renders whatever `model\*.glb` it has, so a mixed 0.9.5/0.9.6 pair sees a soldier on one screen and the villager on the other.
 5. In game: partner should see crouch (flag bit0), jump tuck (bit1), a fast 0.094 s item **jab** on Fire1 (bit2) — the fist stays at mid-body height (~1.06 m), the prop swings horizontal forward — the held prop carried up out of the fist (~70° above horizontal, half world size), the boots touching the floor, a faster run cycle, the legs **stepping backwards** when the partner backs up and a **side-step** when they strafe. **v0.8.0**: the partner's **torso must lean with their view** (not just the head), a held **pickaxe must sit in the fist by the handle** (log: `nearest point … cm from the fist` ≈ 4 cm), and pressing **B** (handstand toggle) / **V** (backflip) must show the avatar standing on its hands / doing a full backflip while your own view rolls 180° / spins 360°.

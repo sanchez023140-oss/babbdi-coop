@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -188,7 +188,7 @@ namespace BabbdiCoop
                         else if (t == UnityEngine.Rendering.ShaderPropertyType.Vector)
                             val = sky.GetVector(p).ToString("F2");
                     }
-                    catch { }
+                    catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
                     sb.AppendLine($"  sky.{p} ({t}) = {val}");
                 }
             }
@@ -336,7 +336,7 @@ namespace BabbdiCoop
                     if (tx != null) names.Add($"{sh.GetPropertyName(i)}={tx.name}");
                 }
             }
-            catch { }
+            catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
             return string.Join(",", names.ToArray());
         }
 

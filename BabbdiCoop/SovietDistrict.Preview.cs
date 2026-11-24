@@ -556,7 +556,7 @@ namespace BabbdiCoop
                     l.Add(WL(eye, feet + fwd * 4f));
                 }
             }
-            catch { }
+            catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
             // v0.9.73: the bas-relief on the outward wall of the east-flank block (plan points 5/8)
             try
             {
@@ -572,7 +572,7 @@ namespace BabbdiCoop
                              rb.p + rr * new Vector3(0f, rb.baseY + 22f, rb.d * 0.5f)));
                 }
             }
-            catch { }
+            catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
             // v0.9.82: the Mi-26's engine deck up close вЂ” the original model's cowling, its two
             // intakes and the gearbox fairing adapted onto the new hull. Appended last so the
             // existing shot numbers stay put (the nose points along +x of the roof's own frame).

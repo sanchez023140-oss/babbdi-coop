@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -411,7 +411,7 @@ namespace BabbdiCoop
                             if (y < minY) minY = y;
                         }
                     }
-                    catch { }
+                    catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
                     finally { UnityEngine.Object.Destroy(baked); }
                 }
 

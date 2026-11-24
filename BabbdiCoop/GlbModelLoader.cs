@@ -138,7 +138,7 @@ namespace BabbdiCoop
                             var comma = uri.IndexOf(',');
                             if (comma >= 0)
                             {
-                                try { bytes = Convert.FromBase64String(uri.Substring(comma + 1)); } catch { }
+                                try { bytes = Convert.FromBase64String(uri.Substring(comma + 1)); } catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
                             }
                         }
                         else

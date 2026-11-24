@@ -71,7 +71,7 @@ namespace BabbdiCoop
                                 string dir = System.IO.Path.Combine(
                                     System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? "",
                                     "BabbdiCoop", "texdump");
-                                try { System.IO.Directory.CreateDirectory(dir); } catch { }
+                                try { System.IO.Directory.CreateDirectory(dir); } catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
                                 SavePng(mt, System.IO.Path.Combine(dir, "city_ground_" + k + ".png"));
                             }
                         }
@@ -179,7 +179,7 @@ namespace BabbdiCoop
                 if (!seen.Add(t)) continue;
                 SavePng(t, System.IO.Path.Combine(dir, Safe(t.name) + ".png"));
             }
-            try { System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "done.txt"), "done"); } catch { }
+            try { System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "done.txt"), "done"); } catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
         }
 
         private static string Safe(string s)
@@ -202,7 +202,7 @@ namespace BabbdiCoop
             copy.Apply();
             RenderTexture.active = prev;
             RenderTexture.ReleaseTemporary(rt);
-            try { System.IO.File.WriteAllBytes(path, copy.EncodeToPNG()); } catch { }
+            try { System.IO.File.WriteAllBytes(path, copy.EncodeToPNG()); } catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
             UnityEngine.Object.Destroy(copy);
         }
 
@@ -273,7 +273,7 @@ namespace BabbdiCoop
                                 $"{mesh} mat={(mat != null ? mat.name : "-")} shader={shader} tex={tex}");
                 }
             }
-            try { System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "done.txt"), "done"); } catch { }
+            try { System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "done.txt"), "done"); } catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
         }
     }
 }

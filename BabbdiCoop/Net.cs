@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net;
@@ -334,7 +334,7 @@ namespace BabbdiCoop
             {
                 lock (clients)
                     foreach (var ep in clients)
-                        try { u.Send(data, data.Length, ep); sentPackets++; } catch { }
+                        try { u.Send(data, data.Length, ep); sentPackets++; } catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
                 return;
             }
             if (remoteEP == null) return;
@@ -364,7 +364,7 @@ namespace BabbdiCoop
                 foreach (var ep in clients)
                 {
                     if (ep.Equals(from)) continue;
-                    try { u.Send(data, data.Length, ep); sentPackets++; } catch { }
+                    try { u.Send(data, data.Length, ep); sentPackets++; } catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
                 }
         }
 
@@ -381,7 +381,7 @@ namespace BabbdiCoop
             {
                 lock (clients)
                     foreach (var ep in clients)
-                        try { u.Send(data, data.Length, ep); sentPackets++; } catch { }
+                        try { u.Send(data, data.Length, ep); sentPackets++; } catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
                 return;
             }
             if (remoteEP == null) return;
@@ -441,7 +441,7 @@ namespace BabbdiCoop
                 for (int i = 0; i < clients.Count; i++)
                 {
                     d[26] = (byte)(i + 1);
-                    try { u.Send(d, d.Length, clients[i]); sentPackets++; } catch { }
+                    try { u.Send(d, d.Length, clients[i]); sentPackets++; } catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
                 }
             }
         }
@@ -496,9 +496,9 @@ namespace BabbdiCoop
             running = false;
             role = NetRole.None;
             remoteEP = null;
-            try { rxThread?.Abort(); } catch { }
+            try { rxThread?.Abort(); } catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
             rxThread = null;
-            try { udp?.Close(); } catch { }
+            try { udp?.Close(); } catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
             udp = null;
             incoming.Clear();
             miniIncoming.Clear();

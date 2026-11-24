@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
@@ -114,7 +114,7 @@ namespace BabbdiCoop
                 hasSlop = true;
                 UnityEngine.Object.Destroy(t);
             }
-            catch { }
+            catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
         }
 
         void Reset()

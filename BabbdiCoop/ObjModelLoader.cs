@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -207,7 +207,7 @@ namespace BabbdiCoop
                                     current.texture = tex;
                                 }
                             }
-                            catch { }
+                            catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
                         }
                     }
                 }

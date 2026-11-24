@@ -120,7 +120,7 @@ namespace BabbdiCoop
                 hasBg = true;
                 UnityEngine.Object.Destroy(t);
             }
-            catch { }
+            catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
         }
 
         public void Reset()

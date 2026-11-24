@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using BepInEx.Logging;
@@ -232,7 +232,7 @@ namespace BabbdiCoop
                 m.EnableKeyword("_SPECULARHIGHLIGHTS_OFF");
                 m.EnableKeyword("_GLOSSYREFLECTIONS_OFF");
             }
-            catch { }
+            catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
             if (m.HasProperty("_texcoord")) m.SetVector("_texcoord", new Vector4(1f, 1f, 0f, 0f));
             return m;
         }
@@ -267,7 +267,7 @@ namespace BabbdiCoop
             {
                 m.EnableKeyword("_GLOSSYREFLECTIONS_OFF");
             }
-            catch { }
+            catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
             return m;
         }
 
@@ -287,7 +287,7 @@ namespace BabbdiCoop
 
         private static void TrySet(Material m, string prop, float v)
         {
-            try { if (m.HasProperty(prop)) m.SetFloat(prop, v); } catch { }
+            try { if (m.HasProperty(prop)) m.SetFloat(prop, v); } catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
         }
 
         /// <summary>The GLBs live next to `villager.glb`, in `BepInEx/plugins/BabbdiCoop/figures/`.</summary>

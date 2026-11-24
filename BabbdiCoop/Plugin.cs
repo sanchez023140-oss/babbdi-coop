@@ -19,7 +19,7 @@ namespace BabbdiCoop
     {
         public const string PluginGuid = "com.babbdi.coop";
         public const string PluginName = "BabbdiCoop";
-        public const string PluginVersion = "0.10.45";
+        public const string PluginVersion = "0.10.46";
 
         private static ManualLogSource Log;
 
@@ -323,7 +323,7 @@ namespace BabbdiCoop
                 if (itemOverlayCam != null && itemOverlayCb != null)
                 {
                     try { itemOverlayCam.RemoveCommandBuffer(CameraEvent.AfterEverything, itemOverlayCb); }
-                    catch { }
+                    catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
                     itemOverlayCb = null;
                     itemOverlayCam = null;
                 }
@@ -986,7 +986,7 @@ namespace BabbdiCoop
                 string path = System.IO.Path.Combine(PluginDir, $"netsim_{DateTime.Now:HHmmss}.csv");
                 try { System.IO.File.WriteAllLines(path, simRows); }
                 catch (Exception e) { Log.LogWarning($"[NETSIM] write failed: {e.Message}"); }
-                try { System.IO.File.WriteAllLines(path.Replace(".csv", "_pkt.csv"), simPktRows); } catch { }
+                try { System.IO.File.WriteAllLines(path.Replace(".csv", "_pkt.csv"), simPktRows); } catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
                 Log.LogInfo($"[NETSIM] done, {simRows.Count} rows в†’ {path}");
                 netSimCfg.Value = false;
             }
@@ -1816,7 +1816,7 @@ namespace BabbdiCoop
                 if (mf != null && mf.sharedMesh != null)
                 {
                     Vector3[] v = null;
-                    try { v = mf.sharedMesh.vertices; } catch { }
+                    try { v = mf.sharedMesh.vertices; } catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
                     if (v != null)
                     {
                         int step = Mathf.Max(1, v.Length / 1200);
@@ -1844,7 +1844,7 @@ namespace BabbdiCoop
                         for (int i = 0; i < v.Length; i += step)
                             pts.Add(space.InverseTransformPoint(smr.transform.TransformPoint(v[i])));
                     }
-                    catch { }
+                    catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
                     finally { Destroy(baked); }
                 }
             }
@@ -2370,7 +2370,7 @@ namespace BabbdiCoop
                 if (itemOverlayCam != null && itemOverlayCb != null)
                     itemOverlayCam.RemoveCommandBuffer(CameraEvent.AfterEverything, itemOverlayCb);
             }
-            catch { }
+            catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
             net?.Dispose();
         }
     }
