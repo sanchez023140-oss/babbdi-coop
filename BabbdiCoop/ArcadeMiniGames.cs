@@ -44,9 +44,9 @@ namespace BabbdiCoop
         const int Cell = 12, Cols = 24, Rows = 17, Ox = 16, Oy = 30;
         readonly List<Vector2Int> snake = new List<Vector2Int>();
         Vector2Int sdir, food;
-        // v0.10.43: the turn waiting for the next move. `sdir` is the direction the head
-        // actually MOVED in, never a queued one - that mix-up was the 180-degree bug.
-        Vector2Int sdirQueued;
+        // v0.10.44: the direction is an int pair now, because the shared rule lives in
+        // SnakeTurn.Accept (pure ints, so it can be unit-tested offline).
+        int sdirQX, sdirQY;
         bool sdirHasQueued;
         float stepTimer, stepTime;
         int grow;
@@ -349,7 +349,8 @@ namespace BabbdiCoop
             snake.Add(new Vector2Int(4, 8));
             snake.Add(new Vector2Int(3, 8));
             sdir = new Vector2Int(1, 0);
-            sdirQueued = sdir;
+            sdirQX = sdir.x;
+            sdirQY = sdir.y;
             sdirHasQueued = false;
             stepTime = 0.125f;
             stepTimer = 0f;
@@ -394,7 +395,7 @@ namespace BabbdiCoop
             if (gameOver) return;
             if (sdirHasQueued)
             {
-                sdir = sdirQueued;
+                sdir = new Vector2Int(sdirQX, sdirQY);
                 sdirHasQueued = false;
             }
             var head = snake[0];
@@ -426,18 +427,10 @@ namespace BabbdiCoop
 
         void TryDir(int dx, int dy)
         {
-            var d = new Vector2Int(dx, dy);
-            if (d == Vector2Int.zero) return;
-            // v0.10.43: the reported "impossible" deaths. `sdir` used to be overwritten by the
-            // next key press, but the head only moves once per step, so right -> up -> left
-            // inside one tick validated `left` against the *queued* `up` and produced a real
-            // 180-degree step straight into the neck (a straight snake, instant death).
-            // Now a turn is validated against the direction the head last MOVED in and at
-            // most one turn is buffered per step.
-            if (d == -sdir) return;                                 // never reverse
-            if (d == sdir) { sdirHasQueued = false; return; }       // straight on cancels the buffered turn
-            sdirQueued = d;
-            sdirHasQueued = true;
+            if (dx == 0 && dy == 0) return;
+            // v0.10.44: the rule itself lives in SnakeTurn so the solo and duel cabinets can
+            // never drift apart again (that duplication is what shipped the 180-degree bug twice).
+            SnakeTurn.Accept(sdir.x, sdir.y, ref sdirQX, ref sdirQY, ref sdirHasQueued, dx, dy);
         }
 
         /// <summary>v0.10.43: deterministic proof of the turn rule, driven by
@@ -449,7 +442,7 @@ namespace BabbdiCoop
             if (kind != 3) return "not a snake cabinet";
             var savedSnake = new List<Vector2Int>(snake);
             var savedDir = sdir;
-            var savedQueued = sdirQueued;
+            int savedQX = sdirQX, savedQY = sdirQY;
             bool savedHas = sdirHasQueued;
             var savedFood = food;
             bool savedOver = gameOver;
@@ -467,16 +460,16 @@ namespace BabbdiCoop
 
             // (a) the reported burst: up then left inside one tick
             TryDir(0, -1);
-            bool upQueued = sdirHasQueued && sdirQueued == new Vector2Int(0, -1);
+            bool upQueued = sdirHasQueued && sdirQX == 0 && sdirQY == -1;
             TryDir(-1, 0);
-            bool rejected = sdirQueued == new Vector2Int(0, -1);
+            bool rejected = sdirQX == 0 && sdirQY == -1;
             AdvanceSnake();
             bool survived = !gameOver;
             var head1 = snake[0];
 
             // (b) the same turn one step later is legal
             TryDir(-1, 0);
-            bool accepted = sdirHasQueued && sdirQueued == new Vector2Int(-1, 0);
+            bool accepted = sdirHasQueued && sdirQX == -1 && sdirQY == 0;
             AdvanceSnake();
             bool survived2 = !gameOver;
             var head2 = snake[0];
@@ -488,7 +481,8 @@ namespace BabbdiCoop
             snake.Clear();
             snake.AddRange(savedSnake);
             sdir = savedDir;
-            sdirQueued = savedQueued;
+            sdirQX = savedQX;
+            sdirQY = savedQY;
             sdirHasQueued = savedHas;
             food = savedFood;
             gameOver = savedOver;

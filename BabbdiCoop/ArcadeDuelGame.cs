@@ -330,15 +330,14 @@ namespace BabbdiCoop
             StepSnakes();
         }
 
-        /// <summary>v0.10.43: the shared turn rule. `dir` is the direction the head last moved
-        /// in; `queued` holds at most one turn for the next step. Comparing a press against a
-        /// queued turn (the old code) let right -> up -> left become a real 180 in one cell.</summary>
+        /// <summary>v0.10.44: delegates to <see cref="SnakeTurn"/> — the single turn rule shared
+        /// with the solo cabinet. `dir` is the direction the head last moved in; `queued` holds
+        /// at most one turn for the next step.</summary>
         static void TrySetDir(ref Vector2Int dir, ref Vector2Int queued, ref bool has, Vector2Int want)
         {
-            if (want == dir) { has = false; return; }   // straight on cancels the buffered turn
-            if (want == -dir) return;                   // never reverse
-            queued = want;
-            has = true;
+            int qx = queued.x, qy = queued.y;
+            if (SnakeTurn.Accept(dir.x, dir.y, ref qx, ref qy, ref has, want.x, want.y))
+                queued = new Vector2Int(qx, qy);
         }
 
         void ApplyQueuedDirs()
