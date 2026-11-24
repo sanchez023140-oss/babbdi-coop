@@ -6,9 +6,23 @@ Project: online co-op mod for **BABBDI** v1.2.3 (Unity, by manu1400). User speak
 
 - Project root `E:\858\BabbdiWork\Project` (moved off `C:` on 24.11.2026 — the old `C:\Users\LethargyLogics\Documents\Проект по умолчанию` no longer exists).
 - `BabbdiCoop/` — BepInEx plugin (csproj + Plugin.cs + build.ps1). `build.ps1` compiles and copies DLL into game's `BepInEx/plugins`.
+- `BabbdiCoop/SovietDistrict*.cs` — the district builder is **one partial class spread over 15 files** (v0.10.43). Read only the part you need:
+  `SovietDistrict.cs` (data + Build + materials), `.World.cs` (deck/terraces/ramps/streets), `.Layout.cs` (plots/rows/free-space),
+  `.Buildings.cs` (shell/interior/stairs), `.Details.cs` (walls/slabs/relief/rails/bridges), `.House.cs`, `.Arcade.cs`,
+  `.Props.cs` (helicopter + helpers), `.Penthouse.cs`, `.Memorial.cs`, `.Figures.cs`, `.Preview.cs` (map-shot poses),
+  `.Probes.cs` (walkability diagnostics), `.Diagnostics.cs` (city/texture/npc scans), `.Geo.cs` (mesh builder).
 - `decomp/Assembly-CSharp.decompiled.cs` — ilspycmd output of game code. Regenerate: `$env:DOTNET_ROLL_FORWARD='Major'; ilspycmd <Assembly-CSharp.dll> -o decomp`. ilspycmd 8.2 needs that env var on this machine (.NET 8, not 6).
 - `downloads/` — BepInEx zip etc.
-- No git yet.
+- `Rigger/`, `Harness/` — offline tools (auto-rig, glTF render).
+
+## Git
+
+- Repository at the project root since 24.11.2026. Local identity: `user.name = LethargyLogics`, `user.email = lethargylogics@users.noreply.github.com` (change it before pushing to GitHub; `git config user.email ...`).
+- Tags so far: `v0.10.43-baseline` (single 7 972-line `SovietDistrict.cs`), `v0.10.43-split` (15 partial files, verified byte-for-byte by block comparison + build + in-game district build).
+- Ignored: `bin/`, `obj/`, `*.user`, `.vs/`, `harness_out/`, `*.log`. **Tracked**: `model/` (~130 MB of GLBs/PNGs) — the repo is ~250 MB.
+- Rule: commit after every build that passes; tag every shipped version `vX.Y.Z`. `git diff` is now the changelog.
+- Remote (when the user connects GitHub): `git remote add origin https://github.com/<user>/<repo>.git` then `git push -u origin master --tags`. GitHub Desktop works too.
+
 
 ## File locations (hard rule)
 
@@ -570,6 +584,11 @@ Both versions (solo cabinet and duel) had the same input bug.
    Screenshots `snake_ready/test2.png` (solo, score 0030) and `snake_duel_ready.png` (two snakes)
    confirm the games still play normally.
 6. **Version `0.10.43`.** Packet format unchanged; solo and duel both fixed.
+7. **Housekeeping (same version, same day).** `git init` + first commit + tags `v0.10.43-baseline` and
+   `v0.10.43-split`; `SovietDistrict.cs` (7 972 lines) split into **15 partial-class files** by
+   contiguous member ranges — 16/16 code blocks verified byte-for-byte against the original, build
+   passes, the district still builds in game (`[DISTRICT] built 38 buildings, 0 skipped plots,
+   22 bridges, 74920 quads`, 0 exceptions). Largest file is now 986 lines (`Arcade`).
 
 ### v0.10.42: two-cabinet duels for Pong, Arkanoid and Zmejka, plus three duel cabinets at the opposite wall
 
