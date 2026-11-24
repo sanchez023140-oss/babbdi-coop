@@ -188,7 +188,7 @@ namespace BabbdiCoop
         }
 
         /// <summary>
-        /// v0.9.40 вЂ” the user's "РїСЂРѕР·СЂР°С‡РЅР°СЏ С‚РµРєСЃС‚СѓСЂР°" seen from below a flight. A vertical ray from just
+        /// v0.9.40 вЂ” the user's "прозрачная текстура" seen from below a flight. A vertical ray from just
         /// above the floor **under a flight** must hit that flight's soffit; if it passes through, the
         /// plate really has a hole, and the log says exactly where (flight, position along the run, the
         /// height the soffit should have, and what the ray hit instead).
@@ -222,7 +222,7 @@ namespace BabbdiCoop
                         {
                             through++;
                             log.LogWarning($"[SKIN] {b.w:0.0}x{b.d:0.0} at {b.p.x:0.0},{b.p.z:0.0}: flight {s + 1}, " +
-                                           $"{t:0.00} of the run вЂ” **nothing** over the soffit " +
+                                           $"{t:0.00} of the run — **nothing** over the soffit " +
                                            $"(expected at {ySof:0.00} m): a hole in the plate");
                             continue;
                         }
@@ -231,7 +231,7 @@ namespace BabbdiCoop
                         {
                             wrong++;
                             log.LogWarning($"[SKIN] {b.w:0.0}x{b.d:0.0} at {b.p.x:0.0},{b.p.z:0.0}: flight {s + 1}, " +
-                                           $"{t:0.00} of the run вЂ” hit {hy:0.00} m ({h.collider.name}), " +
+                                           $"{t:0.00} of the run — hit {hy:0.00} m ({h.collider.name}), " +
                                            $"the soffit is at {ySof:0.00} m");
                         }
                     }
@@ -243,7 +243,7 @@ namespace BabbdiCoop
         }
 
         /// <summary>
-        /// v0.9.41 вЂ” the user's "РїСЂРѕР·СЂР°С‡РЅР°СЏ С‚РµРєСЃС‚СѓСЂР°" over every doorway: `Piece` used to draw a wall
+        /// v0.9.41 вЂ” the user's "прозрачная текстура" over every doorway: `Piece` used to draw a wall
         /// segment as two faces plus its two jambs, with **no head and no sill**, so a lintel was an open
         /// slot through the wall's thickness and looking up at a door showed the neighbouring room's
         /// ceiling as a thin dark strip. A ray from just under a door head must hit that head immediately.
@@ -907,7 +907,7 @@ namespace BabbdiCoop
                 }
             log.LogInfo($"[PROBE] corner faces: {n} rays ({nx} x {nz} at 0,25 m over x {xa:0}..{xb:0} / z {za:0.##}..{zb:0.#}), " +
                         $"biggest jump between neighbours {worst * 100f:0.0} cm at ({wx:0.0},{wz:0.0}), " +
-                        $"{faces} jump(s) over 8 cm (= a 32 % slope, i.e. a vertical face) вЂ” a walkable corner has 0");
+                        $"{faces} jump(s) over 8 cm (= a 32 % slope, i.e. a vertical face) — a walkable corner has 0");
         }
 
         /// <summary>

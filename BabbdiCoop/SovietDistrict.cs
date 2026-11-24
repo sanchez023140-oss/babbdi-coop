@@ -54,7 +54,7 @@ namespace BabbdiCoop
         private const float BASE = 0.15f;     // floor of the ground storey: on the deck, no gap under it
         private const float CORR = 2.2f;      // corridor clear width
         private const float SLAB = 0.78f;     // v0.9.43: floor plates 3x the old 0,26 m, growing **downwards**
-                                              // (the user: "СѓРІРµР»РёС‡СЊ РµС‘ С‚РѕР»С‰РёРЅСѓ РІРЅРёР· РІ 3 СЂР°Р·Р°" вЂ” the plate's
+                                              // (the user: "увеличь её толщину вниз в 3 раза" вЂ” the plate's
                                               //  end face over the stair shaft is the one they circled)
         // the stair plates (2,5x the *old* floor slab, see v0.9.38) вЂ” deliberately independent of SLAB,
         // so thickening the floor plates does not inflate the flights/landings as well
@@ -317,8 +317,8 @@ namespace BabbdiCoop
         /// <summary>
         /// [District] CornerApron (v0.9.20) вЂ” how far the **east terrace** (+5 m) is set back from the
         /// platform's south edge, so that its corner next to the round hole in the sea is the *base*
-        /// deck and not a raised floor (the user's red outline in screenshot 1: "СЃСЂРѕРІРЅСЏС‚СЊ СЃ Р±Р°Р·РѕРІС‹Рј
-        /// СѓСЂРѕРІРЅРµРј РѕР±С‰РµР№ РїР»Р°С‚С„РѕСЂРјС‹"). 0 = the old corner, flush with the crest; 12 = a 50 x 12 m apron
+        /// deck and not a raised floor (the user's red outline in screenshot 1: "сровнять с базовым
+        /// уровнем общей платформы"). 0 = the old corner, flush with the crest; 12 = a 50 x 12 m apron
         /// at 0 m. Read once per build; the tier array is rebuilt from its base values every time.
         /// </summary>
         public static float CornerApron = 12f;
@@ -408,7 +408,7 @@ namespace BabbdiCoop
             // three storeys and tops out *through the block's first-floor slab*, so the hole it
             // needs вЂ” and the doorway it needs in the corridor wall вЂ” are planned once here and
             // read by both `Interior` (slab + wall) and `Legs` (the stair itself). Before this the
-            // core's stair ended under a solid slab: the user's "РїСЂРѕР»РµС‚С‹ СѓРїРёСЂР°СЋС‚СЃСЏ РІ РїРµСЂРµРєСЂС‹С‚РёСЏ".
+            // core's stair ended under a solid slab: the user's "пролеты упираются в перекрытия".
             public float coreX0, coreX1;       // the stair lane (1,7 m wide)
             public float coreZ0;               // the exit landing's north edge
             public float coreHoleZ0;           // south edge of the slab hole (headroom < 2 m below)
@@ -446,8 +446,8 @@ namespace BabbdiCoop
             public float stZLow, stZHigh;      // the flight zone in z (stZLow = the corridor side)
             public int stN;                    // risers per flight
             public float stRise, stTread;
-            // v0.9.35: the two flights are separated by a real **open well** вЂ” the user's "РІРµСЂС‚РёРєР°Р»СЊРЅР°СЏ
-            // С‰РµР»СЊ РјРµР¶РґСѓ РїРµСЂРёР»Р°РјРё, РїСЂРѕС…РѕРґСЏС‰Р°СЏ С‡РµСЂРµР· РІРµСЃСЊ РґРѕРј СЃРІРµСЂС…Сѓ РІРЅРёР·" (their reference photo). It
+            // v0.9.35: the two flights are separated by a real **open well** вЂ” the user's "вертикальная
+            // щель между перилами, проходящая через весь дом сверху вниз" (their reference photo). It
             // sits inside the slab hole, which already spans the whole stair hall, so the shaft is open
             // from the ground floor to the roof.
             public float stWell;               // clear gap between the flights
@@ -520,7 +520,7 @@ namespace BabbdiCoop
             ScanNpcs();         // TEMP (v0.9.21): the game's own humanoids, measured
             if (mRough == null)
             {
-                log.LogError("[DISTRICT] concrete materials not found вЂ” district skipped");
+                log.LogError("[DISTRICT] concrete materials not found — district skipped");
                 return;
             }
 

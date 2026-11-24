@@ -260,7 +260,7 @@ namespace BabbdiCoop
             // last resort: the district's concrete with the gradient as albedo + the red lights
             var f = new Material(mRough) { name = "CoopGlowRed (concrete)" };
             f.SetTexture("_BC", tex);
-            log.LogInfo("[GLOW] core material: WARNING no unlit shader and no Standard вЂ” concrete + gradient");
+            log.LogInfo("[GLOW] core material: WARNING no unlit shader and no Standard — concrete + gradient");
             mGlow = f;
             return f;
         }

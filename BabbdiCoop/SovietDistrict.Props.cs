@@ -22,7 +22,7 @@ namespace BabbdiCoop
             }
             if (best != null)
                 log.LogInfo($"[HELI] roof chosen: {best.w:0.0}x{best.d:0.0} m, {best.floors} floors, " +
-                            $"top {best.Top:0.0} m at {best.p.x:0.0},{best.p.z:0.0} вЂ” the tallest free " +
+                            $"top {best.Top:0.0} m at {best.p.x:0.0},{best.p.z:0.0} — the tallest free " +
                             $"block wide enough for the 39,6 m fuselage; its vent box is skipped");
             return best;
         }
@@ -35,7 +35,7 @@ namespace BabbdiCoop
                 string path = System.IO.Path.Combine(dir ?? string.Empty, "BabbdiCoop", "mi26.glb");
                 if (!System.IO.File.Exists(path))
                 {
-                    log.LogWarning("[HELI] mi26.glb is missing вЂ” skipped (" + path + ")");
+                    log.LogWarning("[HELI] mi26.glb is missing — skipped (" + path + ")");
                     return;
                 }
                 float roofTop = b.Top + 0.26f;

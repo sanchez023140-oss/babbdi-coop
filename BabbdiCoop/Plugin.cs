@@ -19,7 +19,7 @@ namespace BabbdiCoop
     {
         public const string PluginGuid = "com.babbdi.coop";
         public const string PluginName = "BabbdiCoop";
-        public const string PluginVersion = "0.10.43";
+        public const string PluginVersion = "0.10.44";
 
         private static ManualLogSource Log;
 
@@ -132,87 +132,87 @@ namespace BabbdiCoop
         private void Awake()
         {
             Log = Logger;
-            joinIp = Config.Bind("Net", "JoinIP", "127.0.0.1", "IP Р°РґСЂРµСЃ С…РѕСЃС‚Р° РґР»СЏ РїРѕРґРєР»СЋС‡РµРЅРёСЏ (F6)");
-            port = Config.Bind("Net", "Port", 7777, "UDP РїРѕСЂС‚");
+            joinIp = Config.Bind("Net", "JoinIP", "127.0.0.1", "IP адрес хоста для подключения (F6)");
+            port = Config.Bind("Net", "Port", 7777, "UDP порт");
             previewCfg = Config.Bind("Debug", "PreviewAvatar", false,
-                "РћС„С„Р»Р°Р№РЅ-РїСЂРѕРІРµСЂРєР°: СЃРїР°РІРЅРёС‚ Р°РІР°С‚Р°СЂ РІ РјРµРЅСЋ, РїСЂРѕРёРіСЂС‹РІР°РµС‚ РїРѕР·С‹ Рё РїРёС€РµС‚ СЃРєСЂРёРЅС€РѕС‚С‹ РІ BepInEx/plugins/BabbdiCoop/preview");
+                "Оффлайн-проверка: спавнит аватар в меню, проигрывает позы и пишет скриншоты в BepInEx/plugins/BabbdiCoop/preview");
             gripCfg = Config.Bind("Debug", "ItemGrip", "auto",
-                "РљР°РєРёРј РєРѕРЅС†РѕРј Р°РІР°С‚Р°СЂ РґРµСЂР¶РёС‚ РґР»РёРЅРЅС‹Р№ РїСЂРµРґРјРµС‚: auto = С‚РѕРЅРєРёР№ РєРѕРЅРµС† (СЂСѓРєРѕСЏС‚РєР°) РІ Р»Р°РґРѕРЅРё, flip = РїСЂРёРЅСѓРґРёС‚РµР»СЊРЅРѕ СЂР°Р·РІРµСЂРЅСѓС‚СЊ, keep = РЅРµ СЂР°Р·РІРѕСЂР°С‡РёРІР°С‚СЊ");
+                "Каким концом аватар держит длинный предмет: auto = тонкий конец (рукоятка) в ладони, flip = принудительно развернуть, keep = не разворачивать");
             itemScaleCfg = Config.Bind("Debug", "ItemScale", 0.5f,
-                "РњР°СЃС€С‚Р°Р± РїСЂРµРґРјРµС‚РѕРІ РІ СЂСѓРєР°С… Р°РІР°С‚Р°СЂР° (С‚СЂРµС‚СЊРµ Р»РёС†Рѕ): 1 = РєР°Рє РІ РјРёСЂРµ, 0.5 = РІРґРІРѕРµ РјРµРЅСЊС€Рµ");
+                "Масштаб предметов в руках аватара (третье лицо): 1 = как в мире, 0.5 = вдвое меньше");
             smoothingCfg = Config.Bind("Debug", "Smoothing", "new",
-                "РЎРіР»Р°Р¶РёРІР°РЅРёРµ РґРІРёР¶РµРЅРёСЏ Р°РІР°С‚Р°СЂР°: new = РІС‹СЂРѕРІРЅРµРЅРЅР°СЏ СЃРµС‚РєР° РѕС‚СЃС‡С‘С‚РѕРІ + РїР»Р°РІСѓС‡РёР№ РєР»РѕРє (v0.7.8), legacy = РєР°Рє РІ v0.7.7 (РґР»СЏ A/B)");
+                "Сглаживание движения аватара: new = выровненная сетка отсчётов + плавучий клок (v0.7.8), legacy = как в v0.7.7 (для A/B)");
             netSimCfg = Config.Bind("Debug", "NetSim", false,
-                "РўРѕР»СЊРєРѕ РґР»СЏ РѕС‚Р»Р°РґРєРё: РіРѕРЅСЏРµС‚ СЃРёРЅС‚РµС‚РёС‡РµСЃРєРёР№ РїРѕС‚РѕРє РїР°РєРµС‚РѕРІ (30 Р“С† + РґР¶РёС‚С‚РµСЂ В±20 РјСЃ + РїР°СѓР·С‹ 100 РјСЃ) С‡РµСЂРµР· РЅР°СЃС‚РѕСЏС‰РёР№ РїСЂРёС‘Рј Рё РїРёС€РµС‚ CSV РІ BepInEx/plugins/BabbdiCoop");
+                "Только для отладки: гоняет синтетический поток пакетов (30 Гц + джиттер В±20 мс + паузы 100 мс) через настоящий приём и пишет CSV в BepInEx/plugins/BabbdiCoop");
             netSimSecondsCfg = Config.Bind("Debug", "NetSimSeconds", 12f,
-                "РЎРєРѕР»СЊРєРѕ СЃРµРєСѓРЅРґ РґР»РёС‚СЃСЏ NetSim-РїСЂРѕРіРѕРЅ");
+                "Сколько секунд длится NetSim-прогон");
             traceCfg = Config.Bind("Debug", "Trace", false,
-                "РўРѕР»СЊРєРѕ РґР»СЏ РѕС‚Р»Р°РґРєРё: РїРёС€РµС‚ РїРѕРєР°РґСЂРѕРІС‹Р№ CSV РЅР°СЃС‚РѕСЏС‰РµРіРѕ РїСЂРёС‘РјР° (trace_HHmmss.csv) вЂ” РїРѕР·РёС†РёСЏ РґРѕ Рё РїРѕСЃР»Рµ СЃРіР»Р°Р¶РёРІР°РЅРёСЏ, СЃРєРѕСЂРѕСЃС‚СЊ, Р·Р°РґРµСЂР¶РєР°, РґР¶РёС‚С‚РµСЂ РїСЂРёС…РѕРґР°");
+                "Только для отладки: пишет покадровый CSV настоящего приёма (trace_HHmmss.csv) — позиция до и после сглаживания, скорость, задержка, джиттер прихода");
             worldScanCfg = Config.Bind("Debug", "WorldScan", false,
-                "РўРѕР»СЊРєРѕ РґР»СЏ РѕС‚Р»Р°РґРєРё: РѕРґРёРЅ СЂР°Р· СЃРєР°РЅРёСЂСѓРµС‚ Р·Р°РіСЂСѓР¶РµРЅРЅС‹Р№ СѓСЂРѕРІРµРЅСЊ Рё РїРёС€РµС‚ worldscan.txt (РіРґРµ РіРѕСЂРѕРґ, РіРґРµ СЃС‚РµРЅР°-РґР°РјР±Р°, РєР°РєРёРµ РјР°С‚РµСЂРёР°Р»С‹). РЎР°РјРѕ СЃР±СЂР°СЃС‹РІР°РµС‚СЃСЏ РІ false");
+                "Только для отладки: один раз сканирует загруженный уровень и пишет worldscan.txt (где город, где стена-дамба, какие материалы). Само сбрасывается в false");
             mapScanCfg = Config.Bind("Debug", "MapScan", false,
-                "РўРѕР»СЊРєРѕ РґР»СЏ РѕС‚Р»Р°РґРєРё: РѕРґРёРЅ СЂР°Р· СЃРєР°РЅРёСЂСѓРµС‚ РЅРµР±Рѕ Рё РЅРµРІРёРґРёРјС‹Рµ РіСЂР°РЅРёС†С‹ РєР°СЂС‚С‹, РїРёС€РµС‚ mapscan.txt. РЎР°РјРѕ СЃР±СЂР°СЃС‹РІР°РµС‚СЃСЏ РІ false");
+                "Только для отладки: один раз сканирует небо и невидимые границы карты, пишет mapscan.txt. Само сбрасывается в false");
             mapShotCfg = Config.Bind("Debug", "MapShot", false,
-                "РўРѕР»СЊРєРѕ РґР»СЏ РѕС‚Р»Р°РґРєРё: РґРµР»Р°РµС‚ РЅРµСЃРєРѕР»СЊРєРѕ СЃРЅРёРјРєРѕРІ СѓСЂРѕРІРЅСЏ СЃРІРµСЂС…Сѓ Рё СЃРѕ СЃС‚РѕСЂРѕРЅС‹ РґР°РјР±С‹ РІ BepInEx/plugins/BabbdiCoop/map. РЎР°РјРѕ СЃР±СЂР°СЃС‹РІР°РµС‚СЃСЏ РІ false");
+                "Только для отладки: делает несколько снимков уровня сверху и со стороны дамбы в BepInEx/plugins/BabbdiCoop/map. Само сбрасывается в false");
             miniTestCfg = Config.Bind("Debug", "MiniTest", false,
-                "РўРѕР»СЊРєРѕ РґР»СЏ РѕС‚Р»Р°РґРєРё: С‚РµР»РµРїРѕСЂС‚РёСЂСѓРµС‚ РёРіСЂРѕРєР° Рє Р°СЌСЂРѕС…РѕРєРєРµСЋ, РІС…РѕРґРёС‚ РІ СЂРµР¶РёРј СЃС‚РѕР»Р° Рё РїРёС€РµС‚ mini_test.png РІ РїР°РїРєСѓ РёРіСЂС‹. РЎР°РјРѕ СЃР±СЂР°СЃС‹РІР°РµС‚СЃСЏ РІ false");
+                "Только для отладки: телепортирует игрока к аэрохоккею, входит в режим стола и пишет mini_test.png в папку игры. Само сбрасывается в false");
             dinoTestCfg = Config.Bind("Debug", "DinoTest", false,
-                "РўРѕР»СЊРєРѕ РґР»СЏ РѕС‚Р»Р°РґРєРё: С‚РµР»РµРїРѕСЂС‚РёСЂСѓРµС‚ РёРіСЂРѕРєР° Рє Р°РІС‚РѕРјР°С‚Сѓ, РІС…РѕРґРёС‚ РІ РёРіСЂСѓ В«Р”РёРЅРѕР·Р°РІСЂРёРєВ» Рё РїРёС€РµС‚ dino_test.png РІ РїР°РїРєСѓ РёРіСЂС‹. РЎР°РјРѕ СЃР±СЂР°СЃС‹РІР°РµС‚СЃСЏ РІ false");
+                "Только для отладки: телепортирует игрока к автомату, входит в игру «Динозаврик» и пишет dino_test.png в папку игры. Само сбрасывается в false");
             duelTestCfg = Config.Bind("Debug", "DuelTest", "",
                 "debug: pong/arkanoid/snake - enter the duel cabinet as host and write screenshots");
             arcadeTestCfg = Config.Bind("Debug", "ArcadeTest", "",
-                "РўРѕР»СЊРєРѕ РґР»СЏ РѕС‚Р»Р°РґРєРё: arkanoid, pong РёР»Рё snake вЂ” С‚РµР»РµРїРѕСЂС‚РёСЂСѓРµС‚ Рє Р°РІС‚РѕРјР°С‚Сѓ, РІС…РѕРґРёС‚ Рё РїРёС€РµС‚ СЃРЅРёРјРєРё. РЎР°РјРѕ СЃР±СЂР°СЃС‹РІР°РµС‚СЃСЏ РІ false");
+                "Только для отладки: arkanoid, pong или snake — телепортирует к автомату, входит и пишет снимки. Само сбрасывается в false");
             // v0.9.10: live tuning of the district's concrete (no rebuild) вЂ” see SovietDistrict.Stone()
             SovietDistrict.GrainScale = Config.Bind("District", "GrainScale", 0.35f,
-                "РџР»РѕС‚РЅРѕСЃС‚СЊ С‚РµРєСЃС‚СѓСЂС‹ Р±РµС‚РѕРЅР° СЂР°Р№РѕРЅР° РІ РїРѕРІС‚РѕСЂР°С… РЅР° РјРµС‚СЂ (0.35 = Р·РµСЂРЅРѕ РІРґРІРѕРµ РєСЂСѓРїРЅРµРµ, С‡РµРј 0.7). 1 = РѕРґРЅРѕ Р·РµСЂРЅРѕ РЅР° 1 Рј").Value;
+                "Плотность текстуры бетона района в повторах на метр (0.35 = зерно вдвое крупнее, чем 0.7). 1 = одно зерно на 1 м").Value;
             SovietDistrict.GrainCloud = Config.Bind("District", "GrainCloud", 0.15f,
-                "РЎРєРѕР»СЊРєРѕ РѕСЃС‚Р°РІРёС‚СЊ РѕС‚ РєСЂСѓРїРЅС‹С… РїСЏС‚РµРЅ С‚РµРєСЃС‚СѓСЂС‹ (0 = С‚РѕР»СЊРєРѕ Р·РµСЂРЅРѕ/РїРѕСЂС‹, 1 = СЃС‹СЂРѕРµ С„РѕС‚Рѕ)").Value;
+                "Сколько оставить от крупных пятен текстуры (0 = только зерно/поры, 1 = сырое фото)").Value;
             SovietDistrict.GrainGain = Config.Bind("District", "GrainGain", 1f,
-                "РљРѕРЅС‚СЂР°СЃС‚ Р·РµСЂРЅР°: 1 = РєР°Рє РЅР° С„РѕС‚Рѕ Рё РЅР° РґР°РјР±Рµ, Р±РѕР»СЊС€Рµ = РіСЂСѓР±РµРµ").Value;
+                "Контраст зерна: 1 = как на фото и на дамбе, больше = грубее").Value;
             SovietDistrict.GrainTone = Config.Bind("District", "GrainTone", 1.68f,
-                "РЇСЂРєРѕСЃС‚СЊ Р±РµС‚РѕРЅР° СЂР°Р№РѕРЅР° (1.68 = +40 % Рє РїСЂРµР¶РЅРёРј 1.2)").Value;
+                "Яркость бетона района (1.68 = +40 % к прежним 1.2)").Value;
             SovietDistrict.GrainDesat = Config.Bind("District", "GrainDesat", 0.8f,
-                "РќР°СЃРєРѕР»СЊРєРѕ СѓР±СЂР°С‚СЊ Р·РµР»РµРЅРѕРІР°С‚С‹Р№ РѕС‚С‚РµРЅРѕРє С„РѕС‚Рѕ (1 = С‡РёСЃС‚С‹Р№ СЃРµСЂС‹Р№)").Value;
+                "Насколько убрать зеленоватый оттенок фото (1 = чистый серый)").Value;
             // v0.9.13: the platform's own floors are grainier than the houses' walls (the user: +400 %)
             SovietDistrict.PlatformGrain = Config.Bind("District", "PlatformGrain", 2f,
-                "Р’Рѕ СЃРєРѕР»СЊРєРѕ СЂР°Р· РїР»РѕС‚РЅРµРµ Р·РµСЂРЅРѕ РЅР° РіРѕСЂРёР·РѕРЅС‚Р°Р»СЊРЅС‹С… РїРѕРІРµСЂС…РЅРѕСЃС‚СЏС… РїР»Р°С‚С„РѕСЂРјС‹ (РїР»РёС‚Р°, С‚РµСЂСЂР°СЃС‹, СѓР»РёС†С‹, РїР°РЅРґСѓСЃС‹, Р»РµСЃС‚РЅРёС†С‹, СЌСЃРїР»Р°РЅР°РґР°) РїРѕ СЃСЂР°РІРЅРµРЅРёСЋ СЃРѕ СЃС‚РµРЅР°РјРё РґРѕРјРѕРІ. 2 = РєР°Рє РјРѕСЃС‚РѕРІР°СЏ РѕСЃРЅРѕРІРЅРѕРіРѕ Р‘Р°Р±РґРё (0,7 РїРѕРІС‚РѕСЂР°/Рј)").Value;
+                "Во сколько раз плотнее зерно на горизонтальных поверхностях платформы (плита, террасы, улицы, пандусы, лестницы, эспланада) по сравнению со стенами домов. 2 = как мостовая основного Бабди (0,7 повтора/м)").Value;
             // v0.9.70: plan points 1-2 вЂ” the district wears the *main city's* own surface
             SovietDistrict.MatchCity = Config.Bind("District", "MatchCity", true,
-                "Р‘СЂР°С‚СЊ С‚РµРєСЃС‚СѓСЂСѓ РѕСЃРЅРѕРІРЅРѕРіРѕ Р‘Р°Р±РґРё РєР°Рє РµСЃС‚СЊ: СЃС‹СЂРѕР№ M_ConcreteRough00 РґР»СЏ РІСЃРµС… РґРѕРјРѕРІ Рё Р·РµРјР»Рё, РѕРґРёРЅ С‚РѕРЅ; false = РїСЂРµР¶РЅРµРµ РѕСЃРІРµС‚Р»С‘РЅРЅРѕРµ Р·РµСЂРЅРѕ").Value;
+                "Брать текстуру основного Бабди как есть: сырой M_ConcreteRough00 для всех домов и земли, один тон; false = прежнее осветлённое зерно").Value;
             // v0.9.20: the south-east corner of the +5 m east terrace is cut back to the base deck
-            SovietDistrict.CornerApron = Config.Bind("District", "CornerApron", 12f,                "РќР° СЃРєРѕР»СЊРєРѕ РјРµС‚СЂРѕРІ РІРѕСЃС‚РѕС‡РЅР°СЏ С‚РµСЂСЂР°СЃР° (+5 Рј) РѕС‚РѕРґРІРёРЅСѓС‚Р° РѕС‚ РіСЂРµР±РЅСЏ РЅР° СЋРіРѕ-РІРѕСЃС‚РѕС‡РЅРѕРј СѓРіР»Сѓ: С‚Р°Рј, Сѓ РєСЂСѓРіР»РѕР№ РґС‹СЂС‹ РІ РјРѕСЂРµ, С‚РµРїРµСЂСЊ СЂРѕРІРЅС‹Р№ РЅР°СЃС‚РёР» РЅР° СѓСЂРѕРІРЅРµ РіСЂРµР±РЅСЏ, Р° РЅРµ РіРѕР»Р°СЏ 5-РјРµС‚СЂРѕРІР°СЏ РїР»РёС‚Р° (0 = РєР°Рє СЂР°РЅСЊС€Рµ)").Value;
+            SovietDistrict.CornerApron = Config.Bind("District", "CornerApron", 12f,                "На сколько метров восточная терраса (+5 м) отодвинута от гребня на юго-восточном углу: там, у круглой дыры в море, теперь ровный настил на уровне гребня, а не голая 5-метровая плита (0 = как раньше)").Value;
             // v0.9.44: the user asked to remove the low plate that used to bridge the corner up to the
             // granite crest вЂ” the corner is the plain deck again
             SovietDistrict.CornerPadOn = Config.Bind("District", "CornerPad", true,
-                "РџР»РёС‚Р° 48 x 12 Рј РЅР° СЋРіРѕ-РІРѕСЃС‚РѕС‡РЅРѕРј СѓРіР»Сѓ: Рє РіСЂР°РЅРёС‚Сѓ РіСЂРµР±РЅСЏ РІРµРґС‘С‚ РїРѕР»РѕРіРёР№ РІСЉРµР·Рґ 6 Рј (Р±РµР· СЃС‚СѓРїРµРЅСЊРєРё). false = СѓРіРѕР» РІСЂРѕРІРµРЅСЊ СЃ РЅР°СЃС‚РёР»РѕРј").Value;
+                "Плита 48 x 12 м на юго-восточном углу: к граниту гребня ведёт пологий въезд 6 м (без ступеньки). false = угол вровень с настилом").Value;
             // v0.9.14: the red-glowing memorial on the roof of the second-tallest block
             SovietDistrict.MemorialOn = Config.Bind("District", "Memorial", true,
-                "РњРµРјРѕСЂРёР°Р» СЃ РєСЂР°СЃРЅС‹Рј СЃРІРµС‡РµРЅРёРµРј РЅР° РєСЂС‹С€Рµ РІС‚РѕСЂРѕРіРѕ РїРѕ РІС‹СЃРѕС‚Рµ Р·РґР°РЅРёСЏ СЂР°Р№РѕРЅР°").Value;
+                "Мемориал с красным свечением на крыше второго по высоте здания района").Value;
             // v0.9.15: brightness of that glow вЂ” 1 = the v0.9.14 level, 0.5 = half (the user's request)
             SovietDistrict.MemorialGlow = Config.Bind("District", "MemorialGlow", 0.5f,
-                "РЇСЂРєРѕСЃС‚СЊ СЃРІРµС‡РµРЅРёСЏ РјРµРјРѕСЂРёР°Р»Р°: 1 = РєР°Рє РІ v0.9.14, 0.5 = РІРґРІРѕРµ СЃР»Р°Р±РµРµ (Рё СЌРјРёСЃСЃРёСЏ, Рё РєСЂР°СЃРЅС‹Рµ РёСЃС‚РѕС‡РЅРёРєРё)").Value;
+                "Яркость свечения мемориала: 1 = как в v0.9.14, 0.5 = вдвое слабее (и эмиссия, и красные источники)").Value;
             SovietDistrict.Enabled = Config.Bind("District", "Enabled", true,
-                "РЎС‚СЂРѕРёС‚СЊ СЃРѕРІРµС‚СЃРєРёР№ СЂР°Р№РѕРЅ Р·Р° РґР°РјР±РѕР№ РїСЂРё Р·Р°РіСЂСѓР·РєРµ СѓСЂРѕРІРЅСЏ").Value;
+                "Строить советский район за дамбой при загрузке уровня").Value;
             // v0.9.18: the penthouse (clock tower) on the roof of the block on the peninsula
             SovietDistrict.PenthouseOn = Config.Bind("District", "Penthouse", true,
-                "РџРµРЅС‚С…Р°СѓСЃ СЃ С‡Р°СЃР°РјРё РЅР° РєСЂС‹С€Рµ РѕС‚РґРµР»СЊРЅРѕ СЃС‚РѕСЏС‰РµР№ Р±Р°С€РЅРё РЅР° Р·Р°РїР°РґРЅРѕРј РєСЂС‹Р»Рµ (РїРѕР»СѓРѕСЃС‚СЂРѕРІРµ)").Value;
+                "Пентхаус с часами на крыше отдельно стоящей башни на западном крыле (полуострове)").Value;
             SovietDistrict.Density = Config.Bind("District", "Density", 1f,
-                "РџР»РѕС‚РЅРѕСЃС‚СЊ Р·Р°СЃС‚СЂРѕР№РєРё: 1 = РєР°Рє Р·Р°РґСѓРјР°РЅРѕ, 0.5 = РІРґРІРѕРµ СЂРµР¶Рµ, 1.5 = РїР»РѕС‚РЅРµРµ").Value;
+                "Плотность застройки: 1 = как задумано, 0.5 = вдвое реже, 1.5 = плотнее").Value;
             // v0.9.77: the map itself вЂ” bigger footprint, higher sky, no invisible ceiling
             MapEdits.Enabled = Config.Bind("Map", "Expand", true,
-                "РџСЂР°РІРєР° РєР°СЂС‚С‹ Р‘Р°Р±РґРё: РїР»РѕС‰Р°РґСЊ РІ 2 СЂР°Р·Р° РІРѕ РІСЃРµ СЃС‚РѕСЂРѕРЅС‹, РЅРµРІРёРґРёРјС‹Р№ РїРѕС‚РѕР»РѕРє СѓР±СЂР°РЅ, РЅРµР±Рѕ РїРѕРґРЅСЏС‚Рѕ РІ 2 СЂР°Р·Р°, РёР· РЅРµРІРёРґРёРјС‹С… Р±Р°СЂСЊРµСЂРѕРІ РѕСЃС‚Р°СЋС‚СЃСЏ С‚РѕР»СЊРєРѕ РіСЂР°РЅРёС†С‹ РєР°СЂС‚С‹").Value;
+                "Правка карты Бабди: площадь в 2 раза во все стороны, невидимый потолок убран, небо поднято в 2 раза, из невидимых барьеров остаются только границы карты").Value;
             MapEdits.AreaScale = Config.Bind("Map", "AreaScale", 2f,
-                "Р’Рѕ СЃРєРѕР»СЊРєРѕ СЂР°Р· СЂР°Р·РґРІРёРЅСѓС‚СЊ РіСЂР°РЅРёС†С‹ РєР°СЂС‚С‹ РѕС‚ РµС‘ С†РµРЅС‚СЂР° (2 = РїР»РѕС‰Р°РґСЊ РІ 2 СЂР°Р·Р° РІ РєР°Р¶РґСѓСЋ СЃС‚РѕСЂРѕРЅСѓ)").Value;
+                "Во сколько раз раздвинуть границы карты от её центра (2 = площадь в 2 раза в каждую сторону)").Value;
             MapEdits.SkyScale = Config.Bind("Map", "SkyHeight", 2f,
-                "Р’Рѕ СЃРєРѕР»СЊРєРѕ СЂР°Р· РїРѕРґРЅСЏС‚СЊ СЃР»РѕР№ РѕР±Р»Р°РєРѕРІ/РЅРµР±Р° РЅР°Рґ РіРѕСЂРѕРґРѕРј (2 = РІС‹СЃРѕС‚Р° СЃРєР°Р№Р±РѕРєСЃР° РІ 2 СЂР°Р·Р°)").Value;
+                "Во сколько раз поднять слой облаков/неба над городом (2 = высота скайбокса в 2 раза)").Value;
             MapEdits.RemoveInner = Config.Bind("Map", "RemoveInnerBarriers", true,
-                "РЈР±СЂР°С‚СЊ РІСЃРµ РЅРµРІРёРґРёРјС‹Рµ Р±Р°СЂСЊРµСЂС‹ РІРЅСѓС‚СЂРё РєР°СЂС‚С‹ (РґРІРµСЂРё, Р·Р°Р±РѕСЂС‹, РјРµР»РєРёРµ РєСѓР±С‹), РѕСЃС‚Р°РІРёРІ С‚РѕР»СЊРєРѕ РіСЂР°РЅРёС†С‹ РєР°СЂС‚С‹ Рё KILLZ").Value;
+                "Убрать все невидимые барьеры внутри карты (двери, заборы, мелкие кубы), оставив только границы карты и KILLZ").Value;
             loadSceneCfg = Config.Bind("Debug", "LoadScene", "",
-                "РўРѕР»СЊРєРѕ РґР»СЏ РѕС‚Р»Р°РґРєРё: СЃСЂР°Р·Сѓ Р·Р°РіСЂСѓР·РёС‚СЊ СЌС‚Сѓ СЃС†РµРЅСѓ РїСЂРё СЃС‚Р°СЂС‚Рµ (РЅР°РїСЂРёРјРµСЂ Scene_A), С‡С‚РѕР±С‹ РЅРµ РїСЂРѕС…РѕРґРёС‚СЊ РјРµРЅСЋ");
-            // v0.9.15: the propeller ("Р»РµС‚Р°Р»РєР°") lifts only to a hard-coded 120 m, which is *below* the
+                "Только для отладки: сразу загрузить эту сцену при старте (например Scene_A), чтобы не проходить меню");
+            // v0.9.15: the propeller ("леталка") lifts only to a hard-coded 120 m, which is *below* the
             // district's own roofs (deck 85,5 m, the tallest roof в‰€276 m) вЂ” see PropellerFlyLimitPatch
             flyMaxHeight = Config.Bind("Game", "FlyMaxHeight", 600f,
-                "РџРѕС‚РѕР»РѕРє РїРѕР»С‘С‚Р° РЅР° РїСЂРѕРїРµР»Р»РµСЂРµ РІ РјРµС‚СЂР°С… (РІ РёРіСЂРµ Р±С‹Р»Рѕ Р¶С‘СЃС‚РєРѕ 120 вЂ” СЌС‚Рѕ РЅРёР¶Рµ РєСЂС‹С€ СЂР°Р№РѕРЅР°). 0 РёР»Рё РјРµРЅСЊС€Рµ = РЅРµ РјРµРЅСЏС‚СЊ").Value;
+                "Потолок полёта на пропеллере в метрах (в игре было жёстко 120 — это ниже крыш района). 0 или меньше = не менять").Value;
             Net.Trace = msg => Log.LogInfo($"[Net] {msg}");
             // v0.9.15: game patches (Harmony) вЂ” applied once, after the config is bound
             try
@@ -222,7 +222,7 @@ namespace BabbdiCoop
                     harmony = new Harmony("com.babbdi.coop");
                     var m = AccessTools.Method(typeof(Propeller), "Update");
                     if (m == null)
-                        Log.LogError("[FLY] Propeller.Update not found вЂ” the flight ceiling stays at 120 m");
+                        Log.LogError("[FLY] Propeller.Update not found — the flight ceiling stays at 120 m");
                     else
                         harmony.Patch(m, transpiler: new HarmonyMethod(
                             AccessTools.Method(typeof(BabbdiCoopPlugin), nameof(FlyCeilingTranspiler))));
@@ -230,9 +230,9 @@ namespace BabbdiCoop
             }
             catch (Exception e)
             {
-                Log.LogError($"[FLY] patch failed: {e.Message} вЂ” the flight ceiling stays at 120 m");
+                Log.LogError($"[FLY] patch failed: {e.Message} — the flight ceiling stays at 120 m");
             }
-            Log.LogInfo($"{PluginName} v{PluginVersion} loaded. F5=С…РѕСЃС‚ F6=РєР»РёРµРЅС‚(ip:{joinIp.Value}) F7=СЃС‚РѕРї РїРѕСЂС‚={port.Value}");
+            Log.LogInfo($"{PluginName} v{PluginVersion} loaded. F5=хост F6=клиент(ip:{joinIp.Value}) F7=стоп порт={port.Value}");
         }
 
         private static Harmony harmony;
@@ -380,7 +380,7 @@ namespace BabbdiCoop
         /// <summary>
         /// Fire1 must be sampled EVERY frame: GetButtonDown is true for exactly one
         /// frame, and SendOwnPose runs only at ~30 Hz, so checking it there dropped
-        /// about two out of three presses ("СѓРґР°СЂ СЂР°Р±РѕС‚Р°РµС‚ С‡РµСЂРµР· СЂР°Р·").
+        /// about two out of three presses ("удар работает через раз").
         /// </summary>
         private void TrackUseEdge()
         {
@@ -416,13 +416,13 @@ namespace BabbdiCoop
             if (Input.GetKeyDown(KeyCode.B))
             {
                 handstandOn = !handstandOn;
-                Toast(handstandOn ? "РЎС‚РѕР№РєР° РЅР° СЂСѓРєР°С…" : "РЎС‚РѕР№РєР° РЅР° СЂСѓРєР°С…: РІС‹РєР»", 1.5f);
+                Toast(handstandOn ? "Стойка на руках" : "Стойка на руках: выкл", 1.5f);
                 Log.LogInfo($"[COOP] handstand = {handstandOn}");
             }
             if (Input.GetKeyDown(KeyCode.V) && flipStart < 0f)
             {
                 flipStart = Time.time;
-                Toast("РЎР°Р»СЊС‚Рѕ РЅР°Р·Р°Рґ", 1.2f);
+                Toast("Сальто назад", 1.2f);
                 Log.LogInfo("[COOP] backflip");
             }
             if (flipStart >= 0f && Time.time - flipStart > FlipCamDuration) flipStart = -1f;
@@ -1048,7 +1048,7 @@ namespace BabbdiCoop
                 remoteManualFlipFor = remoteItemId;
                 remoteManualFlip = !remoteManualFlip;
                 RebuildRemoteHeldItem();
-                Toast($"РџСЂРµРґРјРµС‚ СЂР°Р·РІС‘СЂРЅСѓС‚: {(!remoteManualFlip ? "РєР°Рє Р°РІС‚Рѕ" : "РІСЂСѓС‡РЅСѓСЋ")}", 2f);
+                Toast($"Предмет развёрнут: {(!remoteManualFlip ? "РєР°Рє Р°РІС‚Рѕ" : "РІСЂСѓС‡РЅСѓСЋ")}", 2f);
                 Log.LogInfo($"[COOP] manual grip flip for item id {remoteItemId} = {remoteManualFlip}");
             }
         }
@@ -1062,12 +1062,12 @@ namespace BabbdiCoop
                     .Where(a => a.AddressFamily == AddressFamily.InterNetwork && !IPAddress.IsLoopback(a))
                     .Select(a => a.ToString()));
                 Log.LogInfo($"[COOP] HOST port {port.Value}, IPs: {ips}");
-                Toast($"РҐРћРЎРў. Р”Р°Р№ РґСЂСѓРіСѓ IP: {ips}", 6f);
+                Toast($"ХОСТ. Дай другу IP: {ips}", 6f);
             }
             catch (Exception e)
             {
                 Log.LogError($"[COOP] host failed: {e}");
-                Toast("РҐРћРЎРў: РѕС€РёР±РєР° РІ Р»РѕРі", 4f);
+                Toast("ХОСТ: ошибка в лог", 4f);
             }
         }
 
@@ -1076,12 +1076,12 @@ namespace BabbdiCoop
             try
             {
                 net.StartClient(joinIp.Value, port.Value);
-                Toast($"РРґСѓ Рє {joinIp.Value}:{port.Value}", 5f);
+                Toast($"РРґСѓ к {joinIp.Value}:{port.Value}", 5f);
             }
             catch (Exception e)
             {
                 Log.LogError($"[COOP] join failed: {e}");
-                Toast("РљР›РР•РќРў: РѕС€РёР±РєР° РІ Р»РѕРі", 4f);
+                Toast("РљР›РР•РќРў: ошибка в лог", 4f);
             }
         }
 
@@ -1101,7 +1101,7 @@ namespace BabbdiCoop
             extraSpeed = 0f;
             extraLastPacketTime = -1f;
             samples.Clear();
-            Toast("РљРѕРѕРї РІС‹СЂСѓР±Р»РµРЅ", 2f);
+            Toast("Кооп вырублен", 2f);
         }
 
         // ---------- network pump ----------
@@ -1178,7 +1178,7 @@ namespace BabbdiCoop
             // assumed the batch had arrived evenly spaced; in practice a main-thread hitch
             // queues 3-4 packets, and squeezing them into 2 intervals made the knot grid run
             // 1.5x too fast for a moment вЂ” the avatar accelerated for ~100 ms, which is
-            // exactly the "РґС‘СЂРіР°РµС‚ РїСЂРё Р±РµРіРµ" that survived the v0.7.8 smoothing.
+            // exactly the "дёргает при беге" that survived the v0.7.8 smoothing.
             incomingBatch.Clear();
             while (net.incoming.TryDequeue(out var packet)) incomingBatch.Add(packet);
             if (incomingBatch.Count == 0) return;
@@ -1241,7 +1241,7 @@ namespace BabbdiCoop
             // AnimateRemote is a uniform Catmull-Rom, so its speed between two knots is
             // (distance / knot spacing): with jittery arrival times the spacing jumps
             // between 8 and 90 ms and the avatar visibly accelerates at every knot вЂ” that
-            // was "РґС‘СЂРіР°РµС‚ РїСЂРё Р±РµРіРµ", no matter how smooth the curve itself was. Arrival
+            // was "дёргает при беге", no matter how smooth the curve itself was. Arrival
             // jitter is absorbed by the grid instead of being baked into the curve.
             float interval = Mathf.Clamp(sampleInterval, 1f / 90f, 0.12f);
             float t;
@@ -1284,7 +1284,7 @@ namespace BabbdiCoop
 
             // The "feet" in the packet are the bottom of the sender's CharacterController
             // capsule, and Unity holds that shape a skin-width above the surface вЂ” so the
-            // avatar visibly hovered ("РјРѕРґРµР»СЊ Р»РµРІРёС‚РёСЂСѓРµС‚"). Probe the real floor under the
+            // avatar visibly hovered ("модель левитирует"). Probe the real floor under the
             // feet on our side and place the model on it. v0.7.8: the correction itself is
             // smoothed вЂ” a stair/ledge used to move it by up to 32 cm in ONE packet, which
             // read as the whole model hopping.
@@ -1301,7 +1301,7 @@ namespace BabbdiCoop
                 // v0.8.0: this used to move 5 cm PER PACKET toward the raycast hit, i.e. up to
                 // 1.5 m/s of vertical motion at 30 Hz. On rocks and stairs the ray alternates
                 // between a ledge and the floor and the whole model bobbed вЂ” vertical
-                // bobbing is the most visible part of "РґС‘СЂРіР°РµС‚СЃСЏ РїСЂРё С…РѕРґСЊР±Рµ". The correction
+                // bobbing is the most visible part of "дёргается при ходьбе". The correction
                 // is a slow bias now (П„ в‰€ 0.4 s), ignores anything under 1.5 cm and is
                 // clamped, so it cannot turn into motion of its own.
                 if (Mathf.Abs(dy) < 0.015f) dy = groundOffset;
@@ -1373,7 +1373,7 @@ namespace BabbdiCoop
             BuildAvatar(remoteGo.transform);
             remoteAnimator = remoteGo.GetComponentInChildren<GlbAnimator>();
             Log.LogInfo("[COOP] remote player spawned");
-            Toast("Р”СЂСѓРі РІ РёРіСЂРµ!", 3f);
+            Toast("Друг в игре!", 3f);
         }
 
         // v0.10.6: the second remote peer. Simple follower (not the full 30 Hz spline stack);
@@ -1515,7 +1515,7 @@ namespace BabbdiCoop
             else
             {
                 BuildHumanoid(root);
-                avatarSource = "РїСЂРёРјРёС‚РёРІС‹ (fallback!)";
+                avatarSource = "примитивы (fallback!)";
             }
         }
 
@@ -1606,7 +1606,7 @@ namespace BabbdiCoop
 
             if (source == null)
             {
-                Toast($"РџСЂРµРґРјРµС‚ #{remoteItemId} Сѓ РґСЂСѓРіР° РЅРµ РЅР°Р№РґРµРЅ РІ СЌС‚РѕРј РјРёСЂРµ", 2f);
+                Toast($"Предмет #{remoteItemId} у друга не найден в этом мире", 2f);
                 Log.LogWarning($"[COOP] no scene object with item id {remoteItemId}");
                 return;
             }
@@ -1632,7 +1632,7 @@ namespace BabbdiCoop
             FitHeldItemToHand(clone, hand);
             remoteHeldItem = clone;
 
-            Toast($"Р”СЂСѓРі РґРµСЂР¶РёС‚: {source.name}", 2f);
+            Toast($"Друг держит: {source.name}", 2f);
             Log.LogInfo($"[COOP] partner holds item id {remoteItemId} ('{source.name}') в†’ cloned");
         }
 
@@ -1681,10 +1681,10 @@ namespace BabbdiCoop
                 MeshBoxPoints(clone, hand, pts);
                 if (pts.Count < 8)
                 {
-                    Log.LogWarning("[COOP] item has no usable renderers вЂ” left as-is");
+                    Log.LogWarning("[COOP] item has no usable renderers — left as-is");
                     return;
                 }
-                Log.LogInfo($"[COOP] item meshes are not readable вЂ” fitting by mesh-local bounds ({pts.Count} box corners)");
+                Log.LogInfo($"[COOP] item meshes are not readable — fitting by mesh-local bounds ({pts.Count} box corners)");
             }
 
             var b0 = BoundsOf(pts);
@@ -2074,7 +2074,7 @@ namespace BabbdiCoop
                     // Catmull-Rom instead of a plain lerp: packets are not evenly spaced
                     // (the sender's gate quantises to frame boundaries), so straight-line
                     // segments changed the avatar's speed at every knot вЂ” that is what
-                    // still read as "РґС‘СЂРіР°РµС‚" at running speed. A C1-continuous spline
+                    // still read as "дёргает" at running speed. A C1-continuous spline
                     // keeps the velocity smooth across knots.
                     var s0 = samples[Mathf.Max(0, i - 1)];
                     var s3 = samples[Mathf.Min(n - 1, i + 2)];
@@ -2286,11 +2286,11 @@ namespace BabbdiCoop
                 float age = net.lastRecvClock < 0f ? -1f : net.ClockNow - net.lastRecvClock;
                 string stale = net.role == NetRole.None ? ""
                     : (net.remoteEndpointKnown
-                        ? (age < 0 ? "Р¶РґСѓ РїР°РєРµС‚С‹вЂ¦" : $"РїР°РєРµС‚ {age:0.0}s РЅР°Р·Р°Рґ")
-                        : (net.role == NetRole.Client ? "РЅРµ СЃСЂР°Р±РѕС‚Р°Р»Рѕ РїРѕРєР° вЂ” Р¶РґСѓ С…РѕС‚СЊ С‡РµРіРѕ-С‚Рѕ РѕС‚ С…РѕСЃС‚Р°вЂ¦" : "Р¶РґСѓ РєР»РёРµРЅС‚Р°вЂ¦"));
+                        ? (age < 0 ? "жду пакеты…" : $"пакет {age:0.0}s назад")
+                        : (net.role == NetRole.Client ? "не сработало пока — жду хоть чего-то от хоста…" : "жду клиента…"));
 
                 GUI.Label(new Rect(8, 8, 520, 64),
-                    $"<b>[COOP v{PluginVersion}]</b> {net.role} | РѕС‚РґР°РЅРѕ: {net.sentPackets} | РїСЂРёРЅСЏС‚Рѕ: {net.recvPackets} | {stale} | РјРѕРґРµР»СЊ: {avatarSource}",
+                    $"<b>[COOP v{PluginVersion}]</b> {net.role} | отдано: {net.sentPackets} | принято: {net.recvPackets} | {stale} | модель: {avatarSource}",
                     new GUIStyle(GUI.skin.label) { fontSize = 14, richText = true });
             }
 

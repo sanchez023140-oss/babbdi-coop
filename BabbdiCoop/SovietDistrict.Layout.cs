@@ -75,7 +75,7 @@ namespace BabbdiCoop
                 log.LogInfo($"[LEGS] the pair is one house in plan: {west.w:0.0} + {east.w:0.0} = " +
                             $"{west.w + east.w:0.0} x {deep:0.0} m at x {west.p.x - west.w * 0.5f:0.0}.." +
                             $"{east.p.x + east.w * 0.5f:0.0}, z 26, yaw 0 (west {west.floors} floors, " +
-                            $"east {east.floors} floors вЂ” heights unchanged)");
+                            $"east {east.floors} floors — heights unchanged)");
             }
 
             // --- the outlying tower on the western wing (the house marked on the plan), +14 m

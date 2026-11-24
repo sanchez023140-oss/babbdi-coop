@@ -484,7 +484,7 @@ namespace BabbdiCoop
             // v0.9.39: the plate's sides are built as **closed per-tread cells** (bottom = the soffit
             // strip, top = the tread, front = the riser, back = the face below the next riser, both
             // sides) instead of an open shell. Every cell is a closed solid, so no view вЂ” not even
-            // through a seam вЂ” can reach the empty inside: that inside was the "РїСЂРѕР·СЂР°С‡РЅС‹Рµ С‚РѕСЂС†С‹".
+            // through a seam вЂ” can reach the empty inside: that inside was the "прозрачные торцы".
             for (int i = 0; i < count; i++)
             {
                 float a = toSouth ? z1 - (i + 1) * tread : z0 + i * tread;
@@ -681,7 +681,7 @@ namespace BabbdiCoop
                 g.Quad(0, e1, e4, i4, i1, Vector3.up, 0.5f);     // sill
                 // v0.9.64: the **same four faces, reversed**. A single-sided reveal disappears when you
                 // look into an opening from the far side (the jamb's normal points into the opening), and
-                // that is the "РїСЂРѕР·СЂР°С‡РЅР°СЏ С‚РµРєСЃС‚СѓСЂР°" at windows seen at an angle / at the corners. Two
+                // that is the "прозрачная текстура" at windows seen at an angle / at the corners. Two
                 // coplanar faces with opposite normals cannot z-fight вЂ” culling picks one.
                 g.Quad(0, e2, e1, i1, i2, -u, 0.5f);
                 g.Quad(0, e3, e4, i4, i3, u, 0.5f);
@@ -768,7 +768,7 @@ namespace BabbdiCoop
             // v0.9.42: the hole's rim must face **into the hole** (that is the side you see it from вЂ”
             // standing in the stairwell). The two z-edges had their normals the other way round, so the
             // floor plate's end face over the shaft was culled: you looked straight through the slab's
-            // thickness into the storey below ("РЅРµРІРёРґРёРјС‹Р№ С‚РѕСЂРµС†").
+            // thickness into the storey below ("невидимый торец").
             g.Quad(0, new Vector3(h.x, yb, h.y), new Vector3(h.x, yb, h.w), new Vector3(h.x, yt, h.w), new Vector3(h.x, yt, h.y), Vector3.right, 0.5f);
             g.Quad(0, new Vector3(h.z, yb, h.y), new Vector3(h.z, yb, h.w), new Vector3(h.z, yt, h.w), new Vector3(h.z, yt, h.y), Vector3.left, 0.5f);
             g.Quad(0, new Vector3(h.x, yb, h.y), new Vector3(h.z, yb, h.y), new Vector3(h.z, yt, h.y), new Vector3(h.x, yt, h.y), Vector3.forward, 0.5f);
@@ -780,7 +780,7 @@ namespace BabbdiCoop
             if (x1 - x0 < 0.002f || z1 - z0 < 0.002f) return;
             // v0.9.63: a **closed box**, not two faces. The two-face version left every slab's side edge
             // open, so at exterior corners and along the roof edge you looked *through* the slab (the
-            // user's "РїСЂРѕР·СЂР°С‡РЅС‹Рµ С‚РµРєСЃС‚СѓСЂС‹" on vertical and horizontal outside corners).
+            // user's "прозрачные текстуры" on vertical and horizontal outside corners).
             g.Box(0, new Vector3((x0 + x1) * 0.5f, (yb + yt) * 0.5f, (z0 + z1) * 0.5f),
                   new Vector3(x1 - x0, yt - yb, z1 - z0), Quaternion.identity, 0.2f);
         }
@@ -799,7 +799,7 @@ namespace BabbdiCoop
             g.Quad(0, b + Vector3.up * y0, d + Vector3.up * y0, d + Vector3.up * y1, b + Vector3.up * y1, u, 0.5f);
             // v0.9.40: **the head and the sill**. Without them every lintel was an open slot through the
             // wall's thickness вЂ” looking up at any doorway you saw the ceiling of the room beyond as a
-            // thin dark strip, i.e. exactly the "РїСЂРѕР·СЂР°С‡РЅР°СЏ С‚РµРєСЃС‚СѓСЂР°" the user kept photographing.
+            // thin dark strip, i.e. exactly the "прозрачная текстура" the user kept photographing.
             g.Quad(0, a + Vector3.up * y1, b + Vector3.up * y1, d + Vector3.up * y1, c + Vector3.up * y1,
                    Vector3.up, 0.5f);
             g.Quad(0, a + Vector3.up * y0, b + Vector3.up * y0, d + Vector3.up * y0, c + Vector3.up * y0,

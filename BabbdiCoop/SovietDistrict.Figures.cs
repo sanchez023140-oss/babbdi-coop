@@ -69,7 +69,7 @@ namespace BabbdiCoop
                 float area = b.w * b.d;
                 if (area > best) { best = area; pick = b; }
             }
-            if (pick == null) { log.LogWarning("[FIGURE] no block roof for the seven вЂ” skipped"); return; }
+            if (pick == null) { log.LogWarning("[FIGURE] no block roof for the seven — skipped"); return; }
             var rot = Quaternion.Euler(0f, pick.yaw, 0f);
             float roofY = pick.Top + 0.26f;          // the roof plate's top face (see `Roof`)
             float zn = pick.d * 0.5f - 2f;           // 2 m inside the +z edge
@@ -86,7 +86,7 @@ namespace BabbdiCoop
                 string file = System.IO.Path.Combine(GlbFigureBuilder.Dir, $"fig_{i + 1}.glb");
                 if (!System.IO.File.Exists(file))
                 {
-                    log.LogWarning($"[FIGURE] figure {i + 1} ({FigNames[i]}): {file} is missing вЂ” skipped");
+                    log.LogWarning($"[FIGURE] figure {i + 1} ({FigNames[i]}): {file} is missing — skipped");
                     continue;
                 }
                 try
@@ -106,8 +106,8 @@ namespace BabbdiCoop
             log.LogInfo($"[FIGURE] the seven are on another Stalin roof now: block {pick.w:0.0}x{pick.d:0.0} m " +
                         $"at {pick.p.x:0.0},{pick.p.z:0.0}, roof {roofY:0.0} m, 2 m inside the " +
                         $"+z edge, 4 m apart, facing outward; {loaded} of {FigNames.Length} loaded from " +
-                        $"{GlbFigureBuilder.Dir} (new characters in the game's own style вЂ” " +
-                        $"{string.Join(", ", FigLooks)} вЂ” 2,04-2,72 m tall, four heads high)");
+                        $"{GlbFigureBuilder.Dir} (new characters in the game's own style — " +
+                        $"{string.Join(", ", FigLooks)} — 2,04-2,72 m tall, four heads high)");
         }
 
         /// <summary>The seven, in the order of `fig_1..7.glb` on the roof (west to east).</summary>

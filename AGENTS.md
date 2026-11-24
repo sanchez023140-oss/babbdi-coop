@@ -1,4 +1,4 @@
-# AGENTS.md
+﻿# AGENTS.md
 
 Project: online co-op mod for **BABBDI** v1.2.3 (Unity, by manu1400). User speaks Russian — respond in Russian. Game lives at `E:\858\BABBDI_WINDOWS_1.2.3` (user-provided install; itch.io download). Everything below is verified from game files unless noted.
 
@@ -14,6 +14,8 @@ Project: online co-op mod for **BABBDI** v1.2.3 (Unity, by manu1400). User speak
 - `decomp/Assembly-CSharp.decompiled.cs` — ilspycmd output of game code. Regenerate: `$env:DOTNET_ROLL_FORWARD='Major'; ilspycmd <Assembly-CSharp.dll> -o decomp`. ilspycmd 8.2 needs that env var on this machine (.NET 8, not 6).
 - `downloads/` — BepInEx zip etc.
 - `Rigger/`, `Harness/` — offline tools (auto-rig, glTF render).
+- `Tests/` — offline console checks: `dotnet run --project Tests` compiles `BabbdiCoop/SnakeTurn.cs` directly and asserts the turn rule (8 checks, ~1 s, no game). Run it after touching snake input.
+- `GIT-CHEATSHEET.md` — the short git guide for the project owner (Russian).
 
 ## Git
 
@@ -51,7 +53,7 @@ Project: online co-op mod for **BABBDI** v1.2.3 (Unity, by manu1400). User speak
 - Target framework: netstandard2.1. BepInEx 5 + Harmony via direct DLL refs from the game folder, no nuget needed for plugin deps.
 - Windows console prints Cyrillic as mojibake; quote Cyrillic paths. Built-in websearch/webfetch to itch.io fail (403/404) — don't retry them; derive facts from files here.
 
-## Mod status (BabbdiCoop v0.10.43)
+## Mod status (BabbdiCoop v0.10.44)
 
 - Packet format (**31 B**, type=1): pos(12) + rot(16) + itemId(1, 0xFF=empty hands) + flags(1) @ ~30 Hz (v0.7.3; was 20 Hz). **Semantics since v0.5.0: pos = FEET position** of the sender, computed as `fpc.transform.TransformPoint(cc.center) - up*(cc.height/2)` (CharacterController-aware → crouch keeps avatar on ground). Rotation = camera rotation; v0.6.0 derives **speed** (position delta / packet dt, smoothed, ignores >12 m/s teleports) and **pitch** (`asin(-forward.y)`) from it. **v0.7.0 flags byte**: bit0 crouch (`fpc.isCrouching`), bit1 airborne (`!cc.isGrounded`), bit2 use (Fire1 rising edge while an item is held, latched 0.2 s). **v0.8.0**: bit3 handstand (held state, `B`), bit4 flip (latched ≈1 s on `V`, receiver starts one flip on the rising edge). Old builds are incompatible with 31 B packets.
 - One-way-flow bug (client never received host packets) root-caused as unbound-UdpClient race: client `UdpClient(0)` binds at startup now; RX thread runs off Unity main thread, so no `Time.*` calls in it (Unity throws cross-thread) — Net.Clock Stopwatch instead.
@@ -547,6 +549,33 @@ The user: «перетекстурируй … в стилистике и цве
 8. **Not playable**: no puck/mallet physics or scoring; it is a local decorative prop, like the
    figures — each peer builds its own copy from its own GLB. The table's central scoreboard arch is
    part of the source asset and is kept.
+
+### v0.10.44: one shared Zmejka rule, offline tests, and the Russian text is readable again
+
+Three housekeeping items from the project review, all with a build-level proof.
+
+1. **`SnakeTurn.cs` — one turn rule for both cabinets.** The 180-degree bug had shipped
+   twice because the rule was copy-pasted into `ArcadeMiniGame` and `ArcadeDuelGame`. Both now
+   call `SnakeTurn.Accept(dx, dy, ref qx, ref qy, ref has, wx, wy)` — pure ints, no Unity types —
+   and the solo cabinet keeps its queue as `sdirQX/sdirQY`. A future fix can no longer apply to
+   one copy only.
+2. **`Tests/` — offline checks.** New `Tests/CoopTests.csproj` compiles that same source file
+   (`<Compile Include="..\BabbdiCoop\SnakeTurn.cs" />`) into a console app, so
+   `dotnet run --project Tests` runs 8 assertions in a second without launching the game:
+   normal turn, the same-tick burst, "rejected press must not clear the buffer", straight-on
+   cancels, bare reverse rejected, a turn one step later, replacing a buffered turn, and a
+   step-by-step replay of the reported burst (`next=(6,7)` instead of the neck `(5,8)`).
+   Result: `ALL CHECKS PASSED`.
+3. **The Russian text was double-encoded.** Every Cyrillic string in the plugin had been written
+   by a tool that read UTF-8 as CP1251, so the HUD, the toasts, the config descriptions and the
+   log read `РџРѕРЅРі` instead of `Понг` — in the shipped DLL, not just in the console. A one-shot
+   repair decoded the mangled runs **inside string literals only** (comments untouched), and
+   only where `cp1251 → utf-8` provably round-trips. Proof: the log now reads
+   `BabbdiCoop v0.10.44 loaded. F5=хост F6=клиент(ip:127.0.0.1) F7=стоп порт=7777` and
+   `[DUEL] Змейка started (host)`; the duel HUD screenshot reads
+   `E — ВЫЙТИ ДУЭЛЬ WASD — ЗМЕЙКА`.
+4. **Version `0.10.44`.** No packet changes. `dotnet run --project Tests` is now the cheapest
+   regression check in the project.
 
 ### v0.10.43: Zmejka — the "impossible" deaths were a 180-degree step into the neck
 
@@ -4420,7 +4449,7 @@ and then removed.
 ## Smoke-test checklist
 
 1. `powershell -ExecutionPolicy Bypass -File build.ps1` from `BabbdiCoop/`
-2. Launch `Babbdi.exe`, look for `BabbdiCoop v0.10.43 loaded` in `<game>\BepInEx\LogOutput.log`.
+2. Launch `Babbdi.exe`, look for `BabbdiCoop v0.10.44 loaded` in `<game>\BepInEx\LogOutput.log`.
 3. HUD (top-left) shows the avatar source; `модель: GLB villager.glb (yaw180)` means the villager rig loaded (`[COOP] avatar loaded from GLB: …villager.glb yaw180=True` then `[GLB] raw height 1,72 m → avatar 2,12 m`).
 4. Both players should run **v0.9.20** (the district is host-side geometry, so a client without it still joins); the 31-byte packet is unchanged, so a 0.7.7/0.7.8/0.8.0 peer still connects — they just do not send/receive the trick bits (bits 3/4). The district is identical for both only if both load the same level scene; it is rebuilt per level load, not synced. **The avatar model is purely local** — each peer renders whatever `model\*.glb` it has, so a mixed 0.9.5/0.9.6 pair sees a soldier on one screen and the villager on the other.
 5. In game: partner should see crouch (flag bit0), jump tuck (bit1), a fast 0.094 s item **jab** on Fire1 (bit2) — the fist stays at mid-body height (~1.06 m), the prop swings horizontal forward — the held prop carried up out of the fist (~70° above horizontal, half world size), the boots touching the floor, a faster run cycle, the legs **stepping backwards** when the partner backs up and a **side-step** when they strafe. **v0.8.0**: the partner's **torso must lean with their view** (not just the head), a held **pickaxe must sit in the fist by the handle** (log: `nearest point … cm from the fist` ≈ 4 cm), and pressing **B** (handstand toggle) / **V** (backflip) must show the avatar standing on its hands / doing a full backflip while your own view rolls 180° / spins 360°.

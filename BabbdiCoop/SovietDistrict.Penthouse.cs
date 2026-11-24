@@ -547,7 +547,7 @@ namespace BabbdiCoop
             }
             var f = new Material(mRough) { name = "CoopClock (concrete + dial)" };
             if (f.HasProperty("_BC")) f.SetTexture("_BC", tex);
-            log.LogInfo("[PENTHOUSE] clock material: WARNING no emissive and no unlit shader вЂ” concrete + dial");
+            log.LogInfo("[PENTHOUSE] clock material: WARNING no emissive and no unlit shader — concrete + dial");
             mClock = f;
             return mClock;
         }
@@ -573,7 +573,7 @@ namespace BabbdiCoop
                 mGlass = m;
                 return m;
             }
-            log.LogInfo("[PENTHOUSE] glass material: WARNING no transparent shader вЂ” the panes are dark");
+            log.LogInfo("[PENTHOUSE] glass material: WARNING no transparent shader — the panes are dark");
             mGlass = mDark;
             return mGlass;
         }

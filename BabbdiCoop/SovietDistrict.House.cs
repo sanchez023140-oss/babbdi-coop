@@ -608,7 +608,7 @@ namespace BabbdiCoop
             // v0.9.59: the five figures leave this roof for another Stalin block (see FiguresOnBlock)
             FiguresOnBlock();
 
-            log.LogInfo($"[HOUSE] v0.9.63: built to the references вЂ” stylobate {pw:0.0}x{pd:0.0} m вЂ” " +
+            log.LogInfo($"[HOUSE] v0.9.63: built to the references — stylobate {pw:0.0}x{pd:0.0} m — " +
                         $"ground floor recessed {inset:0} m on 5 round columns, overhanging upper storey with " +
                         $"the window ribbon and the loggia band (top {ptop + p.y:0.0} m); each tower is two " +
                         $"sections: lower {tw:0.0}x{td:0.0} m, {lfl:0} floors with a blank 2-storey base band " +

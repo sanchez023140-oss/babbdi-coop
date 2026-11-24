@@ -34,7 +34,7 @@ namespace BabbdiCoop
             string path = System.IO.Path.Combine(dir ?? string.Empty, "airhockey.glb");
             if (!System.IO.File.Exists(path))
             {
-                log.LogWarning("[PROP] airhockey.glb is missing вЂ” skipped (" + path + ")");
+                log.LogWarning("[PROP] airhockey.glb is missing — skipped (" + path + ")");
                 return;
             }
             try

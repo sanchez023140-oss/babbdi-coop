@@ -54,8 +54,8 @@ namespace BabbdiCoop
             /// Quad with **world-anchored UVs** (v0.9.4-r3). The old code started every quad at (0,0)
             /// and scaled by the quad's own size, so each wall cell, window reveal and box face
             /// restarted the texture. On a facade built from 1-5 m cells that restart is a visible
-            /// grid of identical patches вЂ” it read as tiling/panelling (the user's "С„РѕС‚Рѕ 1"), and it
-            /// is why lowering the density only made the patches bigger ("РєР°РјСѓС„Р»СЏР¶"). Projecting the
+            /// grid of identical patches вЂ” it read as tiling/panelling (the user's "фото 1"), and it
+            /// is why lowering the density only made the patches bigger ("камуфляж"). Projecting the
             /// corners onto the face's tangent frame gives one continuous UV field over the whole
             /// district, so `T_RoughConcreteMacro`'s 1-5 cm pits flow across a building exactly like
             /// the game's own blocks (photo 4) and across the deck like the dam (photo 2).

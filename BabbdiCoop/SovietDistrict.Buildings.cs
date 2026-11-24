@@ -16,7 +16,7 @@ namespace BabbdiCoop
         /// `StairsTall`/`Stairs` from their own constants (`corr + 1.5`, `zi в€’ corr в€’ 3`) while the
         /// slab hole was cut from another set, so a block with a **wide corridor and a shallow
         /// footprint** got a flight crammed into 1,16 m вЂ” or, once `run &lt; 2`, no stair at all вЂ” and a
-        /// floor plate above it either way ("СѓРїРёСЂР°СЋС‚СЃСЏ РІ РіР»СѓС…РѕР№ РїРѕС‚РѕР»РѕРє"). And the flights themselves
+        /// floor plate above it either way ("упираются в глухой потолок"). And the flights themselves
         /// came out 1,2вЂ¦4,9 m long instead of the 2вЂ“3 m the user asked for.
         ///
         /// Now the plan is computed once and both the hole and the flights read it:
@@ -65,7 +65,7 @@ namespace BabbdiCoop
         /// v0.9.35 вЂ” the plan of the **street-level core** of a block on legs (`Legs`), computed before
         /// anything is built so the stair and the hole it needs in the block's first-floor slab cannot
         /// disagree. That is exactly the bug PlanStair fixed for the houses' own stairs, and it is the
-        /// user's "РІ РЅРµРєРѕС‚РѕСЂС‹С… РґРѕРјР°С… РїСЂРѕР»РµС‚С‹ СѓРїРёСЂР°СЋС‚СЃСЏ РІ РїРѕС‚РѕР»РѕС‡РЅС‹Рµ РїРµСЂРµРєСЂС‹С‚РёСЏ": the core's three
+        /// user's "в некоторых домах пролеты упираются в потолочные перекрытия": the core's three
         /// flights climbed 16,8 m and the last one ended **inside** the block's solid ground slab, so
         /// the houses on pylons could not be entered from the street at all.
         ///
@@ -243,7 +243,7 @@ namespace BabbdiCoop
                     // v0.9.36: the band is a **facade ring**, not a solid box. As a box it also capped
                     // the whole interior at every floor вЂ” the stairwell hole included вЂ” which is why
                     // the stairs of the point towers (and of the two blocks on legs, and the clock
-                    // tower) ended 0,24 m under the floor: the user's "Р»РµСЃС‚РЅРёС†С‹ СѓРїРёСЂР°СЋС‚СЃСЏ РІ РїРµСЂРµРєСЂС‹С‚РёСЏ".
+                    // tower) ended 0,24 m under the floor: the user's "лестницы упираются в перекрытия".
                     float y = y0 + f * fh;
                     float bw = b.w + 0.35f, bd = b.d + 0.35f;
                     const float bt = 0.35f;                 // band thickness, half in the wall
