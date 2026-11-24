@@ -24,10 +24,11 @@ Project: online co-op mod for **BABBDI** v1.2.3 (Unity, by manu1400). User speak
 - Tags so far: `v0.10.43-baseline` (single 7 972-line `SovietDistrict.cs`), `v0.10.43-split` (15 partial files, verified byte-for-byte by block comparison + build + in-game district build).
 - Ignored: `bin/`, `obj/`, `*.user`, `.vs/`, `harness_out/`, `*.log`. **Tracked**: `model/` (~130 MB of GLBs/PNGs) — the repo is ~250 MB.
 - Rule: commit after every build that passes; tag every shipped version `vX.Y.Z`. `git diff` is now the changelog.
-- Remote (v0.10.48, 24.11.2026): **https://github.com/sanchez023140-oss/babbdi-coop** — **private**, branch `master`, all tags pushed. Release `v0.10.48` carries `BabbdiCoop-v0.10.48.zip` (120 MB) as an asset — GitHub's 100 MB per-file limit means the zip can never live in the repo itself, only in Releases (2 GB per asset).
+- Remote (v0.10.48, 24.11.2026): **https://github.com/sanchez023140-oss/babbdi-coop** — **PUBLIC** since 24.11.2026 (topics: babbdi, babbdi-coop, bepinex, unity-mod, coop), branch `master`, all tags pushed. Release `v0.10.48` carries `BabbdiCoop-v0.10.48.zip` (120 MB) as an asset — GitHub's 100 MB per-file limit means the zip can never live in the repo itself, only in Releases (2 GB per asset). Anonymous download verified (HTTP 200, 125 448 329 bytes).
+- Before going public: `CREDITS.md` lists every third-party asset (Soldier CC-BY 4.0 attribution, Soul Reaver villager, Mi-26, arcade cabinet, air hockey, font) and a takedown offer; a secrets scan (`gho_`, `github_pat_`, private keys, the machine's public IP) came back empty.
 - `gh` is a portable install at `E:\858\BabbdiWork\Tools\gh\bin\gh.exe` (not on PATH); `gh auth setup-git` is configured, so `git push` works without a prompt.
 - Publish flow: `powershell -File make-release.ps1` → `gh release create vX.Y.Z <zip> --title … --notes-file …`.
-- Friends get the build either as a **collaborator** on the private repo (Settings → Collaborators) or from a **public** repo; the models in `model/` are third-party, so keep it private unless a CREDITS pass is done.
+- To go private again: `gh repo edit --visibility private --accept-visibility-change-consequences`.
 
 
 ## File locations (hard rule)
