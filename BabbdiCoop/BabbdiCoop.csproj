@@ -70,6 +70,11 @@
       <HintPath>$(GameDir)\Babbdi_Data\Managed\Newtonsoft.Json.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <!-- v0.10.47: the game already ships Facepunch's Steamworks — the Steam P2P transport uses it -->
+    <Reference Include="Facepunch.Steamworks.Win64">
+      <HintPath>$(GameDir)\Babbdi_Data\Managed\Facepunch.Steamworks.Win64.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="UnityEngine.Rendering">
       <HintPath>$(GameDir)\Babbdi_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
       <Private>false</Private>

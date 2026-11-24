@@ -19,7 +19,7 @@ namespace BabbdiCoop
     {
         public const string PluginGuid = "com.babbdi.coop";
         public const string PluginName = "BabbdiCoop";
-        public const string PluginVersion = "0.10.46";
+        public const string PluginVersion = "0.10.47";
 
         private static ManualLogSource Log;
 
@@ -28,6 +28,9 @@ namespace BabbdiCoop
 
         private ConfigEntry<string> joinIp;
         private ConfigEntry<int> port;
+        // v0.10.47: transport selection and the host's SteamID for Steam P2P
+        private ConfigEntry<string> transportCfg;
+        private ConfigEntry<string> hostSteamIdCfg;
         private ConfigEntry<bool> previewCfg;   // debug: spawn the avatar locally + screenshots
         private ConfigEntry<string> gripCfg;    // debug: auto | flip | keep вЂ” which end the item is held by
         private ConfigEntry<float> itemScaleCfg; // debug: third-person item size multiplier
@@ -132,8 +135,12 @@ namespace BabbdiCoop
         private void Awake()
         {
             Log = Logger;
-            joinIp = Config.Bind("Net", "JoinIP", "127.0.0.1", "IP адрес хоста для подключения (F6)");
+            joinIp = Config.Bind("Net", "JoinIP", "127.0.0.1", "IP адрес хоста для подключения по UDP (F6)");
             port = Config.Bind("Net", "Port", 7777, "UDP порт");
+            transportCfg = Config.Bind("Net", "Transport", "udp",
+                "Транспорт: udp = обычная сеть по IP (по умолчанию), steam = Steam P2P (нужен запущенный Steam у обоих)");
+            hostSteamIdCfg = Config.Bind("Net", "HostSteamId", "",
+                "Только для steam: 64-битный SteamID хоста (хост видит свой в подсказке и в логе по F5)");
             previewCfg = Config.Bind("Debug", "PreviewAvatar", false,
                 "Оффлайн-проверка: спавнит аватар в меню, проигрывает позы и пишет скриншоты в BepInEx/plugins/BabbdiCoop/preview");
             gripCfg = Config.Bind("Debug", "ItemGrip", "auto",
@@ -287,6 +294,7 @@ namespace BabbdiCoop
                 EnsureMiniGame();
                 SimTick();
                 HandleHotkeys();
+                net.Poll();
                 TickVersionHandshake();
                 if (miniGame == null || !miniGame.Active)
                 {
@@ -1087,10 +1095,28 @@ namespace BabbdiCoop
             }
         }
 
+        bool SteamMode => transportCfg != null &&
+                          string.Equals(transportCfg.Value, "steam", StringComparison.OrdinalIgnoreCase);
+
         private void StartHost()
         {
             try
             {
+                if (SteamMode)
+                {
+                    if (!net.StartSteamHost())
+                    {
+                        Log.LogWarning("[COOP] steam host failed: Steam is not available");
+                        Toast("СТИМ НЕДОСТУПЕН: запусти Steam и войди", 6f);
+                        return;
+                    }
+                    versionTimer = 0f;
+                    versionLogged = false;
+                    net.SendVersion();
+                    Log.LogInfo($"[COOP] STEAM HOST id {net.localSteam}");
+                    Toast($"СТИМ-ХОСТ. Твой SteamID: {net.localSteam}", 9f);
+                    return;
+                }
                 net.StartHost(port.Value);
                 versionTimer = 0f;
                 versionLogged = false;
@@ -1112,6 +1138,28 @@ namespace BabbdiCoop
         {
             try
             {
+                if (SteamMode)
+                {
+                    if (!ulong.TryParse((hostSteamIdCfg != null ? hostSteamIdCfg.Value : "").Trim(), out var hostId) ||
+                        hostId == 0)
+                    {
+                        Log.LogWarning("[COOP] steam join: HostSteamId is empty or not a number");
+                        Toast("ВПИШИ SteamID ХОСТА В КОНФИГ (HostSteamId)", 6f);
+                        return;
+                    }
+                    if (!net.StartSteamClient(hostId))
+                    {
+                        Log.LogWarning("[COOP] steam join failed: Steam is not available");
+                        Toast("СТИМ НЕДОСТУПЕН: запусти Steam и войди", 6f);
+                        return;
+                    }
+                    versionTimer = 0f;
+                    versionLogged = false;
+                    net.SendVersion();
+                    Log.LogInfo($"[COOP] STEAM CLIENT {net.localSteam} -> {hostId}");
+                    Toast($"СТИМ: иду к {hostId}", 5f);
+                    return;
+                }
                 net.StartClient(joinIp.Value, port.Value);
                 versionTimer = 0f;
                 versionLogged = false;
@@ -2331,8 +2379,9 @@ namespace BabbdiCoop
 
                 string peer = net.peerVersion == null ? "партнёр: жду версию…"
                     : $"партнёр v{net.peerVersion}";
+                string link = net.steam ? $"steam {net.localSteam}" : $"udp {port.Value}";
                 GUI.Label(new Rect(8, 8, 620, 64),
-                    $"<b>[COOP v{PluginVersion}]</b> {net.role} | отдано: {net.sentPackets} | принято: {net.recvPackets} | {stale} | {peer} | модель: {avatarSource}",
+                    $"<b>[COOP v{PluginVersion}]</b> {net.role} | {link} | отдано: {net.sentPackets} | принято: {net.recvPackets} | {stale} | {peer} | модель: {avatarSource}",
                     new GUIStyle(GUI.skin.label) { fontSize = 14, richText = true });
 
                 // v0.10.45: a mismatched peer USED to look like "connected, but everything is weird".

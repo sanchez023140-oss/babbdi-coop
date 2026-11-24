@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using Steamworks;
 using UnityEngine;
 
 namespace BabbdiCoop
@@ -91,6 +92,12 @@ namespace BabbdiCoop
         public string peerVersion;
         public bool peerVersionMismatch;
 
+        // v0.10.47: Steam P2P transport. A Steam peer is represented by a synthetic IPv6
+        // endpoint built from its 64-bit SteamID, so every existing path (clients list, relay,
+        // mini-game routing, version handshake) works without a second code branch.
+        public bool steam;        // this session runs over Steam, not UDP
+        public ulong localSteam;  // our own SteamID (0 when Steam is unavailable)
+
         // diagnostics
         public long sentPackets;
         public long recvPackets;
@@ -134,53 +141,67 @@ namespace BabbdiCoop
                 while (running && udp != null)
                 {
                     var data = udp.Receive(ref ep);
+                    int peer = PeerFor(ep);
+                    if (peer < 0) continue;
+                    HandlePacket(data, peer, ep);
+                }
+            }
+            catch (SocketException e) { Trace?.Invoke($"rx socket closed: {e.SocketErrorCode}"); }
+            catch (ObjectDisposedException) { }
+            catch (ThreadAbortException) { }
+            catch (Exception e) { Trace?.Invoke($"rx died: {e.GetType().Name}: {e.Message}"); }
+        }
 
-                    // v0.10.6: the host supports two clients. Each sender gets a stable peer id
-                    // (1, 2); the first one stays the primary for the 2-player pipeline, the second
-                    // is rendered by the extra remote avatar. A third sender is ignored.
-                    int peer = 0;
-                    if (role == NetRole.Host)
+        /// <summary>v0.10.47: one peer-registration path for both transports.
+        /// v0.10.6: the host supports two clients. Each sender gets a stable peer id (1, 2);
+        /// the first one stays the primary for the 2-player pipeline, the second is rendered by
+        /// the extra remote avatar. A third live sender is ignored (returns -1).</summary>
+        int PeerFor(IPEndPoint ep)
+        {
+            if (role != NetRole.Host) return 0;
+            lock (clients)
+            {
+                int idx = clients.FindIndex(x => x.Equals(ep));
+                if (idx < 0)
+                {
+                    // v0.10.7: a client that restarted must be able to rejoin after its old
+                    // endpoint went silent. Evict a slot not heard from for 3 s.
+                    if (clients.Count >= 2)
                     {
-                        lock (clients)
+                        int oldest = 0;
+                        for (int i = 1; i < clientLastSeen.Count; i++)
+                            if (clientLastSeen[i] < clientLastSeen[oldest]) oldest = i;
+                        if (ClockNow - clientLastSeen[oldest] > 3f)
                         {
-                            int idx = clients.FindIndex(x => x.Equals(ep));
-                            if (idx < 0)
-                            {
-                                // v0.10.7: a client that restarted must be able to rejoin
-                                // after its old endpoint went silent. Evict a slot that has
-                                // not been heard from for 3 s; otherwise the host is full.
-                                if (clients.Count >= 2)
-                                {
-                                    int oldest = 0;
-                                    for (int i = 1; i < clientLastSeen.Count; i++)
-                                        if (clientLastSeen[i] < clientLastSeen[oldest]) oldest = i;
-                                    if (ClockNow - clientLastSeen[oldest] > 3f)
-                                    {
-                                        Trace?.Invoke($"host dropped stale client {oldest + 1}: {clients[oldest]}");
-                                        clients.RemoveAt(oldest);
-                                        clientLastSeen.RemoveAt(oldest);
-                                    }
-                                    else
-                                    {
-                                        continue; // three live clients: ignore
-                                    }
-                                }
-                                clients.Add(ep);
-                                clientLastSeen.Add(ClockNow);
-                                idx = clients.Count - 1;
-                                Trace?.Invoke($"host accepted client {idx + 1}: {ep}");
-                            }
-                            else
-                            {
-                                clientLastSeen[idx] = ClockNow;
-                            }
-                            peer = idx + 1;
-                            remoteEP = clients[0];
+                            Trace?.Invoke($"host dropped stale client {oldest + 1}: {clients[oldest]}");
+                            clients.RemoveAt(oldest);
+                            clientLastSeen.RemoveAt(oldest);
+                        }
+                        else
+                        {
+                            return -1; // three live clients: ignore
                         }
                     }
+                    clients.Add(ep);
+                    clientLastSeen.Add(ClockNow);
+                    idx = clients.Count - 1;
+                    Trace?.Invoke($"host accepted client {idx + 1}: {ep}");
+                }
+                else
+                {
+                    clientLastSeen[idx] = ClockNow;
+                }
+                remoteEP = clients[0];
+                return idx + 1;
+            }
+        }
 
-                    if (data.Length >= 4 && data[0] == 5)
-                    {
+        /// <summary>v0.10.47: the packet dispatch, shared by the UDP receive thread and the
+        /// Steam poller. In UDP mode this runs off the main thread, so no Unity API calls.</summary>
+        void HandlePacket(byte[] data, int peer, IPEndPoint ep)
+        {
+            if (data.Length >= 4 && data[0] == 5)
+            {
                         // v0.10.45: version announcement — [5][major][minor][patch].
                         // A peer on another build used to connect and then behave strangely
                         // (different packet fields, different rules) with no hint why.
@@ -304,18 +325,12 @@ namespace BabbdiCoop
                         recvPackets++;
                         lastRecvClock = (float)Clock.Elapsed.TotalSeconds;
                     }
-                }
-            }
-            catch (SocketException e) { Trace?.Invoke($"rx socket closed: {e.SocketErrorCode}"); }
-            catch (ObjectDisposedException) { }
-            catch (ThreadAbortException) { }
-            catch (Exception e) { Trace?.Invoke($"rx died: {e.GetType().Name}: {e.Message}"); }
         }
 
         public void SendOwn(Vector3 pos, Quaternion rot, int weaponIdx, byte flags = 0)
         {
-            var u = udp;
-            if (u == null || role == NetRole.None) return;
+            if (role == NetRole.None) return;
+            if (!steam && udp == null) return;
 
             var data = new byte[31];
             data[0] = 1;
@@ -334,20 +349,63 @@ namespace BabbdiCoop
             {
                 lock (clients)
                     foreach (var ep in clients)
-                        try { u.Send(data, data.Length, ep); sentPackets++; } catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
+                        SendTo(data, ep);
                 return;
             }
-            if (remoteEP == null) return;
-            u.Send(data, data.Length, remoteEP);
-            sentPackets++;
+            SendTo(data, remoteEP);
+        }
+
+        /// <summary>v0.10.47: one send path for both transports. Pose (type 1) and relay
+        /// (type 3) go unreliable — they are stale after 33 ms and a retransmit only adds
+        /// latency; everything else (mini-game, cabinet, version) goes reliable.</summary>
+        void SendTo(byte[] data, IPEndPoint ep)
+        {
+            if (ep == null) return;
+            if (steam)
+            {
+                ulong id = SteamFromEndpoint(ep);
+                if (id == 0) return;
+                bool reliable = data.Length == 0 || (data[0] != 1 && data[0] != 3);
+                SteamId peer = id;
+                try
+                {
+                    SteamNetworking.SendP2PPacket(peer, data, data.Length, reliable ? 1 : 0,
+                        reliable ? P2PSend.Reliable : P2PSend.UnreliableNoDelay);
+                    sentPackets++;
+                }
+                catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
+                return;
+            }
+            var u = udp;
+            if (u == null) return;
+            try { u.Send(data, data.Length, ep); sentPackets++; }
+            catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
+        }
+
+        /// <summary>v0.10.47: a Steam peer is addressed by a synthetic IPv6 endpoint built from
+        /// the 64-bit SteamID, so the clients list and relay logic stay exactly as they are.</summary>
+        public static IPEndPoint SteamEndpoint(ulong id)
+        {
+            var b = new byte[16];
+            for (int i = 0; i < 8; i++) b[15 - i] = (byte)(id >> (8 * i));
+            return new IPEndPoint(new IPAddress(b), 0);
+        }
+
+        public static ulong SteamFromEndpoint(IPEndPoint ep)
+        {
+            if (ep == null) return 0;
+            var b = ep.Address.GetAddressBytes();
+            if (b.Length != 16) return 0;
+            ulong v = 0;
+            for (int i = 8; i < 16; i++) v = (v << 8) | b[i];
+            return v;
         }
 
         /// <summary>v0.10.6 — the host forwards client A's pose to B and B's to A.</summary>
         void RelayPose(int source, Vector3 pos, Quaternion rot, int weaponIdx, byte flags, IPEndPoint from)
         {
             if (role != NetRole.Host) return;
-            var u = udp;
-            if (u == null) return;
+            if (!steam && udp == null) return;
             var data = new byte[32];
             data[0] = 3;
             data[1] = (byte)source;
@@ -364,7 +422,7 @@ namespace BabbdiCoop
                 foreach (var ep in clients)
                 {
                     if (ep.Equals(from)) continue;
-                    try { u.Send(data, data.Length, ep); sentPackets++; } catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
+                    SendTo(data, ep);
                 }
         }
 
@@ -372,8 +430,8 @@ namespace BabbdiCoop
 
         void SendMini(byte[] data)
         {
-            var u = udp;
-            if (u == null || role == NetRole.None) return;
+            if (role == NetRole.None) return;
+            if (!steam && udp == null) return;
             // v0.10.7: on the host the mini stream must reach whichever client is at the
             // table. Broadcast mallets/leave to every connected client; a client sends to
             // the host only.
@@ -381,12 +439,10 @@ namespace BabbdiCoop
             {
                 lock (clients)
                     foreach (var ep in clients)
-                        try { u.Send(data, data.Length, ep); sentPackets++; } catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
+                        SendTo(data, ep);
                 return;
             }
-            if (remoteEP == null) return;
-            u.Send(data, data.Length, remoteEP);
-            sentPackets++;
+            SendTo(data, remoteEP);
         }
 
         public void SendMiniMallet(int player, float x, float z, int tableId)
@@ -407,7 +463,7 @@ namespace BabbdiCoop
                                   int hostSide, int clientSide, int tableId)
         {
             var u = udp;
-            if (u == null || role != NetRole.Host) return;
+            if ((!steam && u == null) || role != NetRole.Host) return;
 
             // 52-byte state: the original 22-byte body + side-based match state + the puck
             // respawn animation + the click/goal event counters + the chosen sides and table
@@ -441,7 +497,7 @@ namespace BabbdiCoop
                 for (int i = 0; i < clients.Count; i++)
                 {
                     d[26] = (byte)(i + 1);
-                    try { u.Send(d, d.Length, clients[i]); sentPackets++; } catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
+                    SendTo(d, clients[i]);
                 }
             }
         }
@@ -479,8 +535,8 @@ namespace BabbdiCoop
 
         public void SendCabinet(int game, int msg, byte[] payload = null)
         {
-            var u = udp;
-            if (u == null || role == NetRole.None) return;
+            if (role == NetRole.None) return;
+            if (!steam && udp == null) return;
             int len = payload == null ? 0 : Mathf.Min(payload.Length, 1200);
             var d = new byte[4 + len];
             d[0] = 4;
@@ -489,6 +545,101 @@ namespace BabbdiCoop
             d[3] = (byte)len;
             if (len > 0) Buffer.BlockCopy(payload, 0, d, 4, len);
             SendMini(d);
+        }
+
+        // ---------- v0.10.47 Steam transport ----------
+
+        public bool StartSteamHost()
+        {
+            Stop();
+            if (!EnsureSteam()) return false;
+            steam = true;
+            role = NetRole.Host;
+            running = true;
+            HookSteam();
+            Trace?.Invoke($"steam host, id {localSteam}");
+            return true;
+        }
+
+        public bool StartSteamClient(ulong hostId)
+        {
+            Stop();
+            if (!EnsureSteam() || hostId == 0) return false;
+            steam = true;
+            role = NetRole.Client;
+            remoteEP = SteamEndpoint(hostId);
+            running = true;
+            HookSteam();
+            Trace?.Invoke($"steam client {localSteam} -> {hostId}");
+            return true;
+        }
+
+        void HookSteam()
+        {
+            try
+            {
+                SteamNetworking.AllowP2PPacketRelay(true);
+                SteamNetworking.OnP2PSessionRequest = id => SteamNetworking.AcceptP2PSessionWithUser(id);
+            }
+            catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
+        }
+
+        /// <summary>Reuses the Steam session the game already opened — BABBDI calls
+        /// `SteamClient.Init(2240530)` itself. If that failed (itch build, Steam closed),
+        /// falls back to Spacewar's public test appid 480.</summary>
+        bool EnsureSteam()
+        {
+            try
+            {
+                if (SteamClient.IsValid)
+                {
+                    localSteam = SteamClient.SteamId.Value;
+                    return localSteam != 0;
+                }
+            }
+            catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
+
+            foreach (uint app in new uint[] { 2240530u, 480u })
+            {
+                try { SteamClient.Init(app); }
+                catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
+                try
+                {
+                    if (SteamClient.IsValid)
+                    {
+                        localSteam = SteamClient.SteamId.Value;
+                        Trace?.Invoke($"steam initialised as app {app}, id {localSteam}");
+                        return true;
+                    }
+                }
+                catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
+            }
+            return false;
+        }
+
+        /// <summary>Steam mode has no receive thread: the main thread calls this every frame.
+        /// Facepunch needs RunCallbacks, and both P2P channels are drained here.</summary>
+        public void Poll()
+        {
+            if (!steam) return;
+            try { SteamClient.RunCallbacks(); }
+            catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
+
+            for (int ch = 0; ch < 2; ch++)
+            {
+                for (int guard = 0; guard < 128; guard++)
+                {
+                    Steamworks.Data.P2Packet? got;
+                    try { got = SteamNetworking.ReadP2PPacket(ch); }
+                    catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); break; }
+                    if (got == null) break;
+                    var pkt = got.Value;
+                    var ep = SteamEndpoint(pkt.SteamId.Value);
+                    int peer = PeerFor(ep);
+                    if (peer < 0) continue;
+                    HandlePacket(pkt.Data, peer, ep);
+                }
+            }
         }
 
         public void Stop()
@@ -504,6 +655,20 @@ namespace BabbdiCoop
             miniIncoming.Clear();
             peerVersion = null;
             peerVersionMismatch = false;
+            if (steam)
+            {
+                try
+                {
+                    lock (clients)
+                        foreach (var ep in clients)
+                        {
+                            ulong id = SteamFromEndpoint(ep);
+                            if (id != 0) SteamNetworking.CloseP2PSessionWithUser(id);
+                        }
+                }
+                catch (System.Exception swallowed) { CoopDiag.Swallowed(swallowed); }
+            }
+            steam = false;
             lock (clients) { clients.Clear(); clientLastSeen.Clear(); }
         }
 

@@ -54,7 +54,7 @@ Project: online co-op mod for **BABBDI** v1.2.3 (Unity, by manu1400). User speak
 - Target framework: netstandard2.1. BepInEx 5 + Harmony via direct DLL refs from the game folder, no nuget needed for plugin deps.
 - Windows console prints Cyrillic as mojibake; quote Cyrillic paths. Built-in websearch/webfetch to itch.io fail (403/404) — don't retry them; derive facts from files here.
 
-## Mod status (BabbdiCoop v0.10.46)
+## Mod status (BabbdiCoop v0.10.47)
 
 - Packets: type 1 pose (31 B), type 2 air hockey, type 3 relay, type 4 cabinet duel, **type 5 version handshake (4 B, v0.10.45)**.
 - Packet format (**31 B**, type=1): pos(12) + rot(16) + itemId(1, 0xFF=empty hands) + flags(1) @ ~30 Hz (v0.7.3; was 20 Hz). **Semantics since v0.5.0: pos = FEET position** of the sender, computed as `fpc.transform.TransformPoint(cc.center) - up*(cc.height/2)` (CharacterController-aware → crouch keeps avatar on ground). Rotation = camera rotation; v0.6.0 derives **speed** (position delta / packet dt, smoothed, ignores >12 m/s teleports) and **pitch** (`asin(-forward.y)`) from it. **v0.7.0 flags byte**: bit0 crouch (`fpc.isCrouching`), bit1 airborne (`!cc.isGrounded`), bit2 use (Fire1 rising edge while an item is held, latched 0.2 s). **v0.8.0**: bit3 handstand (held state, `B`), bit4 flip (latched ≈1 s on `V`, receiver starts one flip on the rising edge). Old builds are incompatible with 31 B packets.
@@ -551,6 +551,39 @@ The user: «перетекстурируй … в стилистике и цве
 8. **Not playable**: no puck/mallet physics or scoring; it is a local decorative prop, like the
    figures — each peer builds its own copy from its own GLB. The table's central scoreboard arch is
    part of the source asset and is kept.
+
+### v0.10.47: Steam P2P transport — no IPs, no port forwarding, no Radmin
+
+BABBDI is **free on Steam**, and the game already initialises Steamworks itself
+(`decomp/Assembly-CSharp.decompiled.cs:8295 — SteamClient.Init(2240530u)` inside a try/catch),
+so the mod can ride the same session. `Facepunch.Steamworks.Win64.dll` ships with the game and
+exposes `SteamNetworking`, `SteamNetworkingSockets` and `SteamMatchmaking`.
+
+1. **One send path for both transports.** `Net.SendTo(data, ep)` branches: UDP → `UdpClient.Send`,
+   Steam → `SteamNetworking.SendP2PPacket`. Pose (**type 1**) and relay (**type 3**) go on channel
+   0 as `P2PSend.UnreliableNoDelay` (a retransmit of a 33 ms-old position is worthless); the
+   mini-game, cabinet and version packets go on channel 1 as `P2PSend.Reliable`.
+2. **Peers are addressed by SteamID without touching the rest of the code.** A Steam peer is a
+   *synthetic IPv6 endpoint* built from the 64-bit SteamID (`SteamEndpoint` / `SteamFromEndpoint`),
+   so `clients`, `clientLastSeen`, `remoteEP`, the relay and the mini-game routing keep working
+   unchanged — `PeerFor(ep)` is now the single registration path for both transports.
+   `RxLoop` and the new `Poll()` both call the same `HandlePacket(data, peer, ep)`.
+3. **No receive thread in Steam mode.** Facepunch requires `SteamClient.RunCallbacks()` on the main
+   thread — and the game never calls it — so `Plugin.Update` calls `net.Poll()` every frame, which
+   runs callbacks and drains both channels (64 packets max per channel per frame).
+4. **Init chain:** `EnsureSteam()` first reuses `SteamClient.IsValid` (the game's own 2240530 init);
+   if that failed (itch build, Steam closed) it tries `Init(2240530)` and then **Spacewar (480)**.
+   `AllowP2PPacketRelay(true)` enables Valve's SDR relay, and `OnP2PSessionRequest` accepts incoming
+   sessions.
+5. **Config** `[Net]`: `Transport = udp|steam` (default `udp`), `HostSteamId = ""` (client only).
+   Host: F5 → toast and log `[COOP] STEAM HOST id 7656…`. Client: `HostSteamId` + F6.
+6. **Verified:** with Steam running, F5 in Steam mode logs
+   `[Net] steam host, id 76561198199556285` + `[COOP] STEAM HOST id 76561198199556285`, the HUD
+   reads `[COOP v0.10.47] Host | steam 76561198199556285 | … | партнёр: жду версию…`, and the run
+   has **0 exceptions / 0 swallowed** lines. The UDP path was regression-tested with the fake peer
+   (version mismatch still detected). **Not verified:** a real two-account P2P session — that needs
+   a second Steam account and a second machine.
+7. **Version `0.10.47`.** Packet formats unchanged; `udp` stays the default so nothing regresses.
 
 ### v0.10.46: every swallowed error is now logged once, and the mod packages itself for a friend
 
@@ -4501,7 +4534,7 @@ and then removed.
 ## Smoke-test checklist
 
 1. `powershell -ExecutionPolicy Bypass -File build.ps1` from `BabbdiCoop/`
-2. Launch `Babbdi.exe`, look for `BabbdiCoop v0.10.46 loaded` in `<game>\BepInEx\LogOutput.log`.
+2. Launch `Babbdi.exe`, look for `BabbdiCoop v0.10.47 loaded` in `<game>\BepInEx\LogOutput.log`.
 3. HUD (top-left) shows the avatar source; `модель: GLB villager.glb (yaw180)` means the villager rig loaded (`[COOP] avatar loaded from GLB: …villager.glb yaw180=True` then `[GLB] raw height 1,72 m → avatar 2,12 m`).
 4. Both players should run **v0.9.20** (the district is host-side geometry, so a client without it still joins); the 31-byte packet is unchanged, so a 0.7.7/0.7.8/0.8.0 peer still connects — they just do not send/receive the trick bits (bits 3/4). The district is identical for both only if both load the same level scene; it is rebuilt per level load, not synced. **The avatar model is purely local** — each peer renders whatever `model\*.glb` it has, so a mixed 0.9.5/0.9.6 pair sees a soldier on one screen and the villager on the other.
 5. In game: partner should see crouch (flag bit0), jump tuck (bit1), a fast 0.094 s item **jab** on Fire1 (bit2) — the fist stays at mid-body height (~1.06 m), the prop swings horizontal forward — the held prop carried up out of the fist (~70° above horizontal, half world size), the boots touching the floor, a faster run cycle, the legs **stepping backwards** when the partner backs up and a **side-step** when they strafe. **v0.8.0**: the partner's **torso must lean with their view** (not just the head), a held **pickaxe must sit in the fist by the handle** (log: `nearest point … cm from the fist` ≈ 4 cm), and pressing **B** (handstand toggle) / **V** (backflip) must show the avatar standing on its hands / doing a full backflip while your own view rolls 180° / spins 360°.
