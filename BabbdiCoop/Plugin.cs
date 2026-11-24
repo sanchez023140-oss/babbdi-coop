@@ -19,7 +19,7 @@ namespace BabbdiCoop
     {
         public const string PluginGuid = "com.babbdi.coop";
         public const string PluginName = "BabbdiCoop";
-        public const string PluginVersion = "0.10.44";
+        public const string PluginVersion = "0.10.45";
 
         private static ManualLogSource Log;
 
@@ -287,6 +287,7 @@ namespace BabbdiCoop
                 EnsureMiniGame();
                 SimTick();
                 HandleHotkeys();
+                TickVersionHandshake();
                 if (miniGame == null || !miniGame.Active)
                 {
                     TrackUseEdge();
@@ -1036,6 +1037,39 @@ namespace BabbdiCoop
 
         // ---------- hotkeys ----------
 
+        // v0.10.45: version handshake state
+        private float versionTimer;
+        private bool versionLogged;
+
+        /// <summary>Announces this build until the peer answers, then says once whether the
+        /// versions match. A mismatched peer used to look like "connected but broken".</summary>
+        private void TickVersionHandshake()
+        {
+            if (net.role == NetRole.None) return;
+            if (net.peerVersion == null)
+            {
+                versionTimer -= Time.deltaTime;
+                if (versionTimer <= 0f)
+                {
+                    versionTimer = 1.5f;
+                    net.SendVersion();
+                }
+                return;
+            }
+            if (versionLogged) return;
+            versionLogged = true;
+            if (net.peerVersionMismatch)
+            {
+                Log.LogWarning($"[COOP] VERSION MISMATCH: peer v{net.peerVersion}, " +
+                               $"local v{PluginVersion} — both peers must run the same build");
+                Toast($"ВЕРСИИ НЕ СОВПАДАЮТ: у вас {PluginVersion}, у партнёра {net.peerVersion}", 8f);
+            }
+            else
+            {
+                Log.LogInfo($"[COOP] peer version v{net.peerVersion} (local v{PluginVersion}) — match");
+            }
+        }
+
         private void HandleHotkeys()
         {
             if (Input.GetKeyDown(KeyCode.F5)) StartHost();
@@ -1058,6 +1092,9 @@ namespace BabbdiCoop
             try
             {
                 net.StartHost(port.Value);
+                versionTimer = 0f;
+                versionLogged = false;
+                net.SendVersion();
                 var ips = string.Join(", ", Dns.GetHostAddresses(Dns.GetHostName())
                     .Where(a => a.AddressFamily == AddressFamily.InterNetwork && !IPAddress.IsLoopback(a))
                     .Select(a => a.ToString()));
@@ -1076,12 +1113,15 @@ namespace BabbdiCoop
             try
             {
                 net.StartClient(joinIp.Value, port.Value);
-                Toast($"РРґСѓ к {joinIp.Value}:{port.Value}", 5f);
+                versionTimer = 0f;
+                versionLogged = false;
+                net.SendVersion();
+                Toast($"Иду к {joinIp.Value}:{port.Value}", 5f);
             }
             catch (Exception e)
             {
                 Log.LogError($"[COOP] join failed: {e}");
-                Toast("РљР›РР•РќРў: ошибка в лог", 4f);
+                Toast("КЛИЕНТ: ошибка в лог", 4f);
             }
         }
 
@@ -2289,9 +2329,26 @@ namespace BabbdiCoop
                         ? (age < 0 ? "жду пакеты…" : $"пакет {age:0.0}s назад")
                         : (net.role == NetRole.Client ? "не сработало пока — жду хоть чего-то от хоста…" : "жду клиента…"));
 
-                GUI.Label(new Rect(8, 8, 520, 64),
-                    $"<b>[COOP v{PluginVersion}]</b> {net.role} | отдано: {net.sentPackets} | принято: {net.recvPackets} | {stale} | модель: {avatarSource}",
+                string peer = net.peerVersion == null ? "партнёр: жду версию…"
+                    : $"партнёр v{net.peerVersion}";
+                GUI.Label(new Rect(8, 8, 620, 64),
+                    $"<b>[COOP v{PluginVersion}]</b> {net.role} | отдано: {net.sentPackets} | принято: {net.recvPackets} | {stale} | {peer} | модель: {avatarSource}",
                     new GUIStyle(GUI.skin.label) { fontSize = 14, richText = true });
+
+                // v0.10.45: a mismatched peer USED to look like "connected, but everything is weird".
+                if (net.peerVersionMismatch && net.peerVersion != null)
+                {
+                    var warn = new GUIStyle(GUI.skin.label)
+                    {
+                        fontSize = 15,
+                        richText = true,
+                        fontStyle = FontStyle.Bold,
+                        normal = { textColor = new Color(1f, 0.42f, 0.32f) }
+                    };
+                    GUI.Label(new Rect(8, 28, 900, 40),
+                        $"ВЕРСИИ НЕ СОВПАДАЮТ: у вас v{PluginVersion}, у партнёра v{net.peerVersion} — обновите оба",
+                        warn);
+                }
             }
 
             if (!string.IsNullOrEmpty(toastText) && Time.realtimeSinceStartup < toastUntil)

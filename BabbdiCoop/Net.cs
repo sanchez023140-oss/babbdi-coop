@@ -86,6 +86,11 @@ namespace BabbdiCoop
         }
         public readonly ConcurrentQueue<CabinetPacket> cabinetIncoming = new();
 
+        // v0.10.45: version handshake. `peerVersion` is the string the other side announced
+        // ("0.10.42"); `peerVersionMismatch` is true while it differs from this build.
+        public string peerVersion;
+        public bool peerVersionMismatch;
+
         // diagnostics
         public long sentPackets;
         public long recvPackets;
@@ -174,7 +179,21 @@ namespace BabbdiCoop
                         }
                     }
 
-                    if (data.Length >= 30 && data[0] == 1)
+                    if (data.Length >= 4 && data[0] == 5)
+                    {
+                        // v0.10.45: version announcement — [5][major][minor][patch].
+                        // A peer on another build used to connect and then behave strangely
+                        // (different packet fields, different rules) with no hint why.
+                        string v = data[1] + "." + data[2] + "." + data[3];
+                        if (peerVersion != v)
+                        {
+                            peerVersion = v;
+                            peerVersionMismatch = v != BabbdiCoopPlugin.PluginVersion;
+                        }
+                        recvPackets++;
+                        lastRecvClock = (float)Clock.Elapsed.TotalSeconds;
+                    }
+                    else if (data.Length >= 30 && data[0] == 1)
                     {
                         var pos = new Vector3(
                             BitConverter.ToSingle(data, 1),
@@ -437,6 +456,27 @@ namespace BabbdiCoop
 
         // ---------- v0.10.42 cabinet duels ----------
 
+        /// <summary>v0.10.45: announces this build's version. Sent on start and retried until the
+        /// peer answers, because the first UDP datagram of a session is the one most likely to be
+        /// dropped (the host may not even have the client's endpoint yet).</summary>
+        public void SendVersion()
+        {
+            if (role == NetRole.None) return;
+            var parts = BabbdiCoopPlugin.PluginVersion.Split('.');
+            var d = new byte[4];
+            d[0] = 5;
+            d[1] = ParsePart(parts, 0);
+            d[2] = ParsePart(parts, 1);
+            d[3] = ParsePart(parts, 2);
+            SendMini(d);
+        }
+
+        static byte ParsePart(string[] parts, int i)
+        {
+            if (parts.Length <= i) return 0;
+            return byte.TryParse(parts[i], out var v) ? v : (byte)0;
+        }
+
         public void SendCabinet(int game, int msg, byte[] payload = null)
         {
             var u = udp;
@@ -462,6 +502,8 @@ namespace BabbdiCoop
             udp = null;
             incoming.Clear();
             miniIncoming.Clear();
+            peerVersion = null;
+            peerVersionMismatch = false;
             lock (clients) { clients.Clear(); clientLastSeen.Clear(); }
         }
 
