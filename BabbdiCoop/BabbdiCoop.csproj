@@ -58,6 +58,11 @@
       <HintPath>$(GameDir)\Babbdi_Data\Managed\UnityEngine.AudioModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <!-- v0.10.49: snowfall, lamp smoke and the boiler plume -->
+    <Reference Include="UnityEngine.ParticleSystemModule">
+      <HintPath>$(GameDir)\Babbdi_Data\Managed\UnityEngine.ParticleSystemModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="UnityEngine.UnityWebRequestModule">
       <HintPath>$(GameDir)\Babbdi_Data\Managed\UnityEngine.UnityWebRequestModule.dll</HintPath>
       <Private>false</Private>

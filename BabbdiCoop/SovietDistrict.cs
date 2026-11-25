@@ -280,7 +280,7 @@ namespace BabbdiCoop
         /// <summary>[Debug] GrainScale вЂ” multiplier over `GrainUvBase` (live tuning, no rebuild).
         /// v0.9.11: 0.7 -> 0.35 вЂ” the user asked for grain twice as coarse, so the tile is 2.86 m
         /// instead of 1.43 m and every pit/aggregate grain doubles on screen.</summary>
-        public static float GrainScale = 0.35f;
+        public static float GrainScale = 0.0167f;
 
         /// <summary>[Debug] GrainCloud вЂ” how much of the photo's 20-40 %-of-tile soft stains survive.
         /// At 0 they are removed entirely (they are what tiled the district like wallpaper at 1 m),
@@ -307,7 +307,7 @@ namespace BabbdiCoop
         /// asked for 0,2 of that (pits ~5x coarser, so the platform reads as big weathered slabs).
         /// Live tuning: `[District] PlatformGrain` in the cfg, no rebuild.
         /// </summary>
-        public static float PlatformGrain = 2.0f;
+        public static float PlatformGrain = 1.0f;
 
         /// <summary>v0.9.70 вЂ” plan point 1-2: use the **main BABBDI city's own surfaces** instead of
         /// a re-baked grain. `true` = the level's raw `M_ConcreteRough00` (the material every city block
@@ -516,6 +516,7 @@ namespace BabbdiCoop
             Quaternion rot = Quaternion.LookRotation(new Vector3(nrm.x, 0f, nrm.y), Vector3.up);
 
             FindMaterials();
+            log.LogInfo($"[DISTRICT] grain uv={GrainUv:0.#####}/m platform={GrainUv * PlatformGrain:0.#####}/m (scale={GrainScale:0.#####}, platform mul={PlatformGrain:0.##})");
             DumpTextures();
             ScanNpcs();         // TEMP (v0.9.21): the game's own humanoids, measured
             if (mRough == null)
@@ -629,7 +630,6 @@ namespace BabbdiCoop
         }
 
         private static string N(Material m) => m != null ? m.name : "none";
-
         // --- one-shot look diagnostics: what the existing dam and the city's blocks actually use ---
 
         private static string TexName(Material m)

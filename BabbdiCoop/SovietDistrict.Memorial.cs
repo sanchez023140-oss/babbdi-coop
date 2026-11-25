@@ -50,6 +50,7 @@ namespace BabbdiCoop
             go.transform.SetParent(root, false);
             go.transform.localPosition = new Vector3(b.p.x, y0, b.p.z);
             go.transform.localRotation = rot;
+            Suliman.SetMemorial(go.transform);   // v0.10.49: the red memorial is the portal to Suliman
 
             var g = new Geo();
             const float f = 0.62f;                        // the plinth's top

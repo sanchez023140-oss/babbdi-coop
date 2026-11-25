@@ -19,7 +19,7 @@ namespace BabbdiCoop
     {
         public const string PluginGuid = "com.babbdi.coop";
         public const string PluginName = "BabbdiCoop";
-        public const string PluginVersion = "0.10.48";
+        public const string PluginVersion = "0.13.1";
 
         private static ManualLogSource Log;
 
@@ -44,6 +44,8 @@ namespace BabbdiCoop
         private bool mapScanDone;
         private ConfigEntry<bool> mapShotCfg;   // debug: stills of the level (top-down + dam)
         private bool mapShotDone;
+        private ConfigEntry<bool> sulimanShotCfg; // v0.10.49: night stills of the winter town
+        private ConfigEntry<bool> portalTestCfg;  // v0.10.49: memorial -> Suliman -> memorial test
         private ConfigEntry<bool> miniTestCfg;  // v0.10.0 debug: teleport to the table, enter, screenshot
         private ConfigEntry<bool> dinoTestCfg;  // v0.10.21 debug: teleport to a cabinet, enter, screenshot
         private ConfigEntry<string> arcadeTestCfg; // v0.10.36 debug: arkanoid|pong|snake test
@@ -166,6 +168,10 @@ namespace BabbdiCoop
                 "Только для отладки: один раз сканирует небо и невидимые границы карты, пишет mapscan.txt. Само сбрасывается в false");
             mapShotCfg = Config.Bind("Debug", "MapShot", false,
                 "Только для отладки: делает несколько снимков уровня сверху и со стороны дамбы в BepInEx/plugins/BabbdiCoop/map. Само сбрасывается в false");
+            sulimanShotCfg = Config.Bind("Debug", "SulimanShot", false,
+                "Только для отладки: телепортирует в «Сулиман», делает серию ночных снимков в BepInEx/plugins/BabbdiCoop/map и возвращает назад. Само сбрасывается в false");
+            portalTestCfg = Config.Bind("Debug", "PortalTest", false,
+                "Только для отладки: ставит игрока на крышу к обелиску, входит в Сулиман, делает снимки и возвращает. Само сбрасывается в false");
             miniTestCfg = Config.Bind("Debug", "MiniTest", false,
                 "Только для отладки: телепортирует игрока к аэрохоккею, входит в режим стола и пишет mini_test.png в папку игры. Само сбрасывается в false");
             dinoTestCfg = Config.Bind("Debug", "DinoTest", false,
@@ -175,8 +181,8 @@ namespace BabbdiCoop
             arcadeTestCfg = Config.Bind("Debug", "ArcadeTest", "",
                 "Только для отладки: arkanoid, pong или snake — телепортирует к автомату, входит и пишет снимки. Само сбрасывается в false");
             // v0.9.10: live tuning of the district's concrete (no rebuild) вЂ” see SovietDistrict.Stone()
-            SovietDistrict.GrainScale = Config.Bind("District", "GrainScale", 0.35f,
-                "Плотность текстуры бетона района в повторах на метр (0.35 = зерно вдвое крупнее, чем 0.7). 1 = одно зерно на 1 м").Value;
+            SovietDistrict.GrainScale = Config.Bind("District", "GrainScale", 0.0167f,
+                "Плотность текстуры бетона района в повторах на метр (0.0167 = очень крупное зерно, в 9 раз реже прежних 0.15). 1 = одно зерно на 1 м").Value;
             SovietDistrict.GrainCloud = Config.Bind("District", "GrainCloud", 0.15f,
                 "Сколько оставить от крупных пятен текстуры (0 = только зерно/поры, 1 = сырое фото)").Value;
             SovietDistrict.GrainGain = Config.Bind("District", "GrainGain", 1f,
@@ -186,8 +192,8 @@ namespace BabbdiCoop
             SovietDistrict.GrainDesat = Config.Bind("District", "GrainDesat", 0.8f,
                 "Насколько убрать зеленоватый оттенок фото (1 = чистый серый)").Value;
             // v0.9.13: the platform's own floors are grainier than the houses' walls (the user: +400 %)
-            SovietDistrict.PlatformGrain = Config.Bind("District", "PlatformGrain", 2f,
-                "Во сколько раз плотнее зерно на горизонтальных поверхностях платформы (плита, террасы, улицы, пандусы, лестницы, эспланада) по сравнению со стенами домов. 2 = как мостовая основного Бабди (0,7 повтора/м)").Value;
+            SovietDistrict.PlatformGrain = Config.Bind("District", "PlatformGrain", 1f,
+                "Во сколько раз плотнее зерно на горизонтальных поверхностях платформы (плита, террасы, улицы, пандусы, лестницы, эспланада) по сравнению со стенами домов. 1 = как стены, без лишней плотности").Value;
             // v0.9.70: plan points 1-2 вЂ” the district wears the *main city's* own surface
             SovietDistrict.MatchCity = Config.Bind("District", "MatchCity", true,
                 "Брать текстуру основного Бабди как есть: сырой M_ConcreteRough00 для всех домов и земли, один тон; false = прежнее осветлённое зерно").Value;
@@ -210,6 +216,12 @@ namespace BabbdiCoop
                 "Пентхаус с часами на крыше отдельно стоящей башни на западном крыле (полуострове)").Value;
             SovietDistrict.Density = Config.Bind("District", "Density", 1f,
                 "Плотность застройки: 1 = как задумано, 0.5 = вдвое реже, 1.5 = плотнее").Value;
+            // v0.10.49: the separate winter town reached through the red memorial
+            Suliman.Enabled = Config.Bind("Suliman", "Enabled", true,
+                "Строить отдельную зимнюю карту «Сулиман» (реальный Сусуман по OSM) далеко от уровня; вход — E у красного обелиска на крыше").Value;
+            // v0.10.70: keep the night/visibility preset but switch its rendering off for debugging
+            Suliman.DebugVision = Config.Bind("Suliman", "DebugVision", true,
+                "Отладка: пресет ночи сохранён, но его рендер выключен (туман, чёрный скайбокс, ночная экспозиция). false = вернуть штатную ночь").Value;
             // v0.9.77: the map itself вЂ” bigger footprint, higher sky, no invisible ceiling
             MapEdits.Enabled = Config.Bind("Map", "Expand", true,
                 "Правка карты Бабди: площадь в 2 раза во все стороны, невидимый потолок убран, небо поднято в 2 раза, из невидимых барьеров остаются только границы карты").Value;
@@ -223,8 +235,8 @@ namespace BabbdiCoop
                 "Только для отладки: сразу загрузить эту сцену при старте (например Scene_A), чтобы не проходить меню");
             // v0.9.15: the propeller ("леталка") lifts only to a hard-coded 120 m, which is *below* the
             // district's own roofs (deck 85,5 m, the tallest roof в‰€276 m) вЂ” see PropellerFlyLimitPatch
-            flyMaxHeight = Config.Bind("Game", "FlyMaxHeight", 600f,
-                "Потолок полёта на пропеллере в метрах (в игре было жёстко 120 — это ниже крыш района). 0 или меньше = не менять").Value;
+            flyMaxHeight = Config.Bind("Game", "FlyMaxHeight", 1200f,
+                "Потолок полёта на пропеллере в метрах (в игре было жёстко 120 — это ниже крыш района и Сулимана). 0 или меньше = не менять").Value;
             Net.Trace = msg => Log.LogInfo($"[Net] {msg}");
             // v0.9.15: game patches (Harmony) вЂ” applied once, after the config is bound
             try
@@ -299,6 +311,7 @@ namespace BabbdiCoop
                 EnsureMiniGame();
                 SimTick();
                 HandleHotkeys();
+                Suliman.Tick();   // v0.10.49: portal, night environment, lamp light pool, snowfall
                 net.PumpSteam();
                 net.Poll();
                 SteamLobby.Tick();
@@ -508,6 +521,17 @@ namespace BabbdiCoop
             // the Soviet district appears once the world is up: it probes the dam crest under the
             // junction, so it builds in the level and stays out of the menu
             if (SovietDistrict.Enabled) SovietDistrict.TryBuild();
+            if (Suliman.Enabled) Suliman.TryBuild();   // v0.10.49: the winter town
+            if (sulimanShotCfg != null && sulimanShotCfg.Value && Suliman.Built)
+            {
+                sulimanShotCfg.Value = false;
+                Suliman.ShotRequested = true;
+            }
+            if (portalTestCfg != null && portalTestCfg.Value && Suliman.Built)
+            {
+                portalTestCfg.Value = false;
+                Suliman.PortalTestRequested = true;
+            }
             MapEdits.TryApply(Log);   // v0.9.77: bigger map, higher sky, no invisible ceiling
 
             // debug: skip the menu so the scan/preview can run headless
@@ -555,6 +579,8 @@ namespace BabbdiCoop
         {
             if (mapShotDone || mapShotCfg == null || !mapShotCfg.Value) return;
             if (Time.time < 8f) return;
+            // wait for the district to exist so the district stills are not skipped
+            if (!SovietDistrict.Built && Time.time < 30f) return;
             mapShotDone = true;
             mapShotCfg.Value = false;
             try
@@ -798,6 +824,8 @@ namespace BabbdiCoop
         /// <summary>Studio capture runs in LateUpdate so the skeleton pose is final.</summary>
         private void LateUpdate()
         {
+            try { Suliman.LateTick(); }
+            catch (Exception e) { Log.LogWarning("suliman late tick: " + e.Message); }
             // v0.8.0: the local view of the tricks has to be applied here вЂ” LateUpdate runs
             // after the game's own mouse look, and the game rewrites the camera rotation
             // every frame from its internal yaw/pitch state, so anything set earlier is lost.
@@ -2522,6 +2550,8 @@ namespace BabbdiCoop
                         normal = { textColor = Color.white }
                     });
             }
+            try { Suliman.DrawPrompt(); }
+            catch (System.Exception e) { Log.LogWarning("suliman prompt: " + e.Message); }
         }
 
         private void OnDestroy()
